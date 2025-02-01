@@ -11,17 +11,19 @@ def extract_mention_username(message):
     return None
 
 
-async def get_bitrix_url_from_admins(chat_id: int,
+async def get_uinfo_from_admins(chat_id: int,
                                      context: ContextTypes.DEFAULT_TYPE):
     admin_ids = await get_chat_admin_ids(chat_id, context)
     for adm_id in admin_ids:
-        user_row = get_user(adm_id)  # ваша функция
+        user_row = get_user(adm_id)
         if user_row:
             bitrix_url = user_row[2]
             is_enabled = user_row[1]
+            group_id = user_row[4]
+
             if bitrix_url and is_enabled:
-                return bitrix_url
-    return None
+                return bitrix_url, group_id
+    return None, None
 
 
 async def get_chat_admin_ids(chat_id: int,

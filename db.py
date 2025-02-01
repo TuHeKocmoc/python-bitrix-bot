@@ -25,6 +25,7 @@ def init_db():
           bitrix_url VARCHAR(255) DEFAULT NULL,
           bitrix_id BIGINT DEFAULT NULL,
           is_enabled TINYINT DEFAULT 0,
+          chat_id BIGINT DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
@@ -75,7 +76,7 @@ def get_user(user_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, is_enabled, bitrix_url, bitrix_id 
+        SELECT id, is_enabled, bitrix_url, bitrix_id, chat_id 
         FROM users 
         WHERE telegram_id=%s
     """, (user_id,))
@@ -177,3 +178,16 @@ def get_bitrix_id_for_user(username: str) -> int or None:
     if row and row[0]:
         return row[0]
     return None
+
+
+def set_user_chat_id(telegram_id: int, chat_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE users
+        SET chat_id = %s
+        WHERE telegram_id = %s
+    """, (chat_id, telegram_id))
+    conn.commit()
+    cursor.close()
+    conn.close()

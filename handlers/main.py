@@ -4,9 +4,9 @@ from telegram.ext import ContextTypes
 from openai_service import parse_message_with_openai
 from bitrix_service import create_task_in_bitrix, get_user_id_from_webhook
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
-                get_bitrix_id_for_user)
+                get_bitrix_id_for_user, set_user_chat_id)
 import logging
-from utils import extract_mention_username, get_bitrix_url_from_admins
+from utils import extract_mention_username, get_uinfo_from_admins
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -83,7 +83,7 @@ async def text_message_handler(update: Update,
             if b_id:
                 bitrix_executors.append(b_id)
 
-        url = await get_bitrix_url_from_admins(chat_id, context)
+        url, group_id = await get_uinfo_from_admins(chat_id, context)
         if not url:
             await update.message.reply_text("Не задан URL")
             return
@@ -101,6 +101,20 @@ async def text_message_handler(update: Update,
             await update.message.reply_text(
                 f"👍"
             )
+        if group_id:
+            task_details = (f"Задача создана: {title}\n"
+                            f"Описание: {description}\n"
+                            f"Дедлайн: {deadline}\n"
+                            f"Ответственный: {responsible_id}\n"
+                            f"Соисполнители: {', '.join(map(str, accomplices))}\n"
+                            f"Чеклист: {', '.join(checklist)}")
+
+            try:
+                await context.bot.send_message(group_id, task_details)
+            except Exception as e:
+                logging.error(f"Ошибка при отправке сообщения в группу: {e}")
+                await update.message.reply_text(
+                    f"Ошибка при отправке информации в группу.")
 
 
 async def info_command_handler(update: Update,
@@ -188,3 +202,30 @@ async def bitrixid_command_handler(update: Update,
         logging.error(f"Ошибка сохранения Bitrix ID: {e}")
         await update.message.reply_text("Ошибка при сохранении. "
                                         "Попробуйте позже.")
+
+
+async def notifications_command_handler(update: Update,
+                                        context: ContextTypes.DEFAULT_TYPE):
+    telegram_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    telegram_user: User = update.effective_user
+    username = (
+                telegram_user.username or telegram_user.first_name or telegram_id)
+
+    user_row = get_user(telegram_id)
+    if not user_row:
+        add_user(telegram_id, username)
+
+    try:
+        set_user_chat_id(telegram_id,
+                         chat_id)
+
+        await update.message.reply_text(
+            f"Ваш ID беседы (chat_id) сохранён: {chat_id}. Теперь я буду отслеживать уведомления в этой беседе."
+        )
+    except Exception as e:
+        logging.error(
+            f"Ошибка при сохранении chat_id для пользователя {telegram_id}: {e}")
+        await update.message.reply_text(
+            "Ошибка при сохранении ID беседы. Попробуйте позже."
+        )
