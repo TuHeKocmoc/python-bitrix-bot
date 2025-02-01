@@ -14,8 +14,10 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
               }
 
     if checklist:
-        fields["TASK_CONTROL"] = [{"TITLE": item, "IS_COMPLETE": "N"}
-                                  for item in checklist]
+        checklist_data = [{"TITLE": item, "IS_COMPLETED": "N"} for item in
+                          checklist]
+        fields["CHECKLIST"] = checklist_data
+
     data = {
         "fields": fields
     }
