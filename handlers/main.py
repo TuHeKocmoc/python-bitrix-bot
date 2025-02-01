@@ -54,6 +54,9 @@ async def text_message_handler(update: Update,
     if parsed.get("is_task"):
         title = parsed.get("title", "Без названия")
         deadline = parsed.get("deadline", "")
+        description = parsed.get("description", "")
+        checklist = parsed.get("checklist", [])
+
         reply_user = None
         mention_user = extract_mention_username(
             update.message)
@@ -92,11 +95,11 @@ async def text_message_handler(update: Update,
             await update.message.reply_text("Не задан URL")
             return
 
-        result = create_task_in_bitrix(url, title, deadline, responsible_id,
-                                       accomplices)
+        result = create_task_in_bitrix(url, title, description, deadline,
+                                       responsible_id, checklist, accomplices)
         if result:
             await update.message.reply_text(
-                f"Задача создана! \nНазвание: {title}\nДедлайн: {deadline}"
+                f"👍"
             )
 
 

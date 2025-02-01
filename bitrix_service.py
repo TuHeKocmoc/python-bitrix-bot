@@ -1,21 +1,26 @@
 import requests
 
 
-def create_task_in_bitrix(webhook, title, deadline=None,
-                          responsible: int = None,
+def create_task_in_bitrix(webhook, title, description=None, deadline=None,
+                          responsible: int = None, checklist: list[str] = None,
                           accomplices: list[int] = None):
     url = f"{webhook}tasks.task.add.json"
 
     fields = {"TITLE": title,
               "DEADLINE": deadline if deadline else "",
-              "RESPONSIBLE_ID": responsible if responsible else 1}
+              "RESPONSIBLE_ID": responsible if responsible else 1,
+              "DESCRIPTION": description if description else "",
+              "ACCOMPLICES": accomplices if accomplices else [],
+              }
 
-    if accomplices:
-        fields["ACCOMPLICES"] = accomplices
+    if checklist:
+        fields["CHECKLIST"] = [{"TITLE": item, "IS_COMPLETE": "N"}
+                               for item in checklist]
 
     data = {
         "fields": fields
     }
+
     try:
         resp = requests.post(url, json=data)
         resp_data = resp.json()
