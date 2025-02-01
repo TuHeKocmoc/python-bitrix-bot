@@ -8,8 +8,10 @@ from telegram.ext import (
 from config import BOT_TOKEN
 from db import init_db
 from handlers.admin import admin_command_handler, ainfo_command_handler
-from handlers.main import start_handler, text_message_handler, \
-    info_command_handler, url_command_handler, bitrixid_command_handler
+from handlers.main import (start_handler, text_message_handler,
+                           info_command_handler, url_command_handler,
+                           bitrixid_command_handler,
+                           notifications_command_handler)
 import logging
 
 logging.basicConfig(
@@ -29,6 +31,8 @@ def main():
     application.add_handler(CommandHandler("url", url_command_handler))
     application.add_handler(
         CommandHandler("bitrixid", bitrixid_command_handler))
+    application.add_handler(
+        CommandHandler("notifications", notifications_command_handler))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))
