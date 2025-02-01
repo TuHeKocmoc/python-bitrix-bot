@@ -13,23 +13,55 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
               "ACCOMPLICES": accomplices if accomplices else [],
               }
 
-    if checklist:
-        fields["CHECKLIST"] = [{"TITLE": item, "IS_COMPLETE": "N"}
-                               for item in checklist]
 
     data = {
         "fields": fields
     }
 
     try:
-        resp = requests.post(url, json=data)
+        resp = requests.post(url, json={"fields": fields})
         resp_data = resp.json()
-        print("STATUS CODE:", resp.status_code)
-        print("RESPONSE:", resp.text)
-        return resp_data
+
+        if resp.status_code == 200 and 'result' in resp_data:
+            task_id = resp_data['result']
+            print(f"Задача создана, ID: {task_id}")
+
+            if checklist:
+                for item in checklist:
+                    add_checklist_item(webhook, task_id, item)
+
+            return resp_data
+        else:
+            print("Ошибка при создании задачи:", resp_data)
+            return None
     except Exception as e:
         print("Bitrix error:", e)
         return None
+
+
+def add_checklist_item(webhook, task_id, checklist_item):
+    url = f"{webhook}tasks.checklistitem.add.json"
+
+    data = {
+        "task_id": task_id,
+        "fields": {
+            "TITLE": checklist_item,
+            "IS_COMPLETE": "N"  # Задаём чеклист как не завершённый
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=data)
+        resp_data = resp.json()
+
+        if resp.status_code == 200:
+            print(
+                f"Чеклист элемент '{checklist_item}' "
+                f"добавлен к задаче {task_id}")
+        else:
+            print("Ошибка при добавлении чеклист элемента:", resp_data)
+    except Exception as e:
+        print("Bitrix error:", e)
 
 
 def get_user_id_from_webhook(webhook: str):
