@@ -53,7 +53,7 @@ async def text_message_handler(update: Update,
     text = update.message.text
     chat_id = update.effective_chat.id
 
-    url, group_id = await get_uinfo_from_admins(chat_id, context)
+    url, notification_group_id = await get_uinfo_from_admins(chat_id, context)
     if not url:
         await update.message.reply_text("Не задан URL")
         return
@@ -111,7 +111,8 @@ async def text_message_handler(update: Update,
             return
 
         result = create_task_in_bitrix(url, title, description, deadline,
-                                       responsible_id, checklist, accomplices)
+                                       responsible_id, checklist, accomplices,
+                                       group_id)
         if result:
             await update.message.reply_text(
                 f"👍"
@@ -120,13 +121,16 @@ async def text_message_handler(update: Update,
             task_details = (f"Задача создана: {title}\n"
                             f"Описание: {description}\n"
                             f"Дедлайн: {deadline}\n"
+                            f"Проект: {project_name}\n"
                             f"Ответственный: {responsible_id}\n"
                             f"Соисполнители: "
                             f"{', '.join(map(str, accomplices))}\n"
-                            f"Чеклист: {', '.join(checklist)}")
+                            f"Чеклист: {', '.join(checklist)}"
+                            )
 
             try:
-                await context.bot.send_message(group_id, task_details)
+                await context.bot.send_message(notification_group_id,
+                                               task_details)
             except Exception as e:
                 logging.error(f"Ошибка при отправке сообщения в группу: {e}")
                 await update.message.reply_text(
