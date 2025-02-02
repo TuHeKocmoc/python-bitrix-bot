@@ -56,8 +56,6 @@ def main():
     )
     scheduler.start()
 
-    asyncio.run(delay_command_handler_daily_all(application, None))
-
     application.run_polling()
 
 

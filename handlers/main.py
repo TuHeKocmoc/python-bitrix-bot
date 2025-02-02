@@ -263,7 +263,8 @@ async def delay_command_handler_daily_all(application,
             report_text = "Нет просроченных задач."
         try:
             await application.bot.send_message(chat_id=main_chat_id,
-                                               text=report_text)
+                                               text=report_text,
+                                               parse_mode="Markdown")
             logging.info(f"Отчет для пользователя {username} отправлен "
                          f"в чат {main_chat_id}.")
         except Exception as e:
