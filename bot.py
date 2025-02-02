@@ -15,7 +15,7 @@ from handlers.main import (start_handler, text_message_handler,
                            delay_command_handler_daily_all,
                            main_command_handler)
 import logging
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -45,7 +45,7 @@ def main():
 
     init_db()
 
-    scheduler = AsyncIOScheduler()
+    scheduler = BackgroundScheduler()
     scheduler.add_job(
         delay_command_handler_daily_all,
         "cron",
@@ -58,6 +58,7 @@ def main():
     delay_command_handler_daily_all(application, None)
 
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()
