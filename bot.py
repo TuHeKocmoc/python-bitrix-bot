@@ -15,6 +15,7 @@ from handlers.main import (start_handler, text_message_handler,
                            delay_command_handler_daily_all,
                            main_command_handler)
 import logging
+import asyncio
 from apscheduler.schedulers.background import BackgroundScheduler
 
 logging.basicConfig(
@@ -55,7 +56,7 @@ def main():
     )
     scheduler.start()
 
-    delay_command_handler_daily_all(application, None)
+    asyncio.run(delay_command_handler_daily_all(application, None))
 
     application.run_polling()
 
