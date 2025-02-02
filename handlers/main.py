@@ -253,7 +253,6 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
     # Формируем текст отчёта
     report_lines = []
     for task in tasks:
-        task_id = task.get("id", "Не указан")
         title = task.get("title", "Без названия")
         deadline = task.get("deadline", "Не указан")
         # Получаем словарь с информацией об ответственном, если он присутствует
@@ -261,13 +260,13 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
         responsible_name = responsible_info.get("name", "Не указан")
 
         task_text = (
-            f"Задача ID: {task_id}\n"
-            f"Название: {title}\n"
+            f"Задача: {title}\n"
             f"Дедлайн: {format_datetime(deadline)}\n"
-            f"Ответственный (Имя): {responsible_name}\n"
+            f"Ответственный: {responsible_name}\n"
             "----------------------"
         )
         report_lines.append(task_text)
 
     report_text = "\n".join(report_lines)
+    report_text = "🔥 **Просроченные задачи** 🔥\n\n" + report_text
     await update.message.reply_text(report_text)
