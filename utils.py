@@ -1,6 +1,6 @@
 from telegram.ext import ContextTypes
 from db import get_user
-
+from datetime import datetime
 
 def extract_mention_username(message):
     entities = message.entities or []
@@ -35,3 +35,11 @@ async def get_chat_admin_ids(chat_id: int,
         # member = ChatMember(owner, admin, member, restricted, left, kicked)
         admin_ids.append(member.user.id)
     return admin_ids
+
+
+def format_datetime(iso_str: str) -> str:
+    # Преобразуем строку ISO в объект datetime
+    # datetime.fromisoformat() поддерживает строки вида "2025-01-30T13:00:00+03:00"
+    dt = datetime.fromisoformat(iso_str)
+    # Форматируем в нужный вид: день.месяц.год часы:минуты
+    return dt.strftime("%d.%m.%Y %H:%M")

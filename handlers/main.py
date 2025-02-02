@@ -7,7 +7,8 @@ from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id)
 import logging
-from utils import extract_mention_username, get_uinfo_from_admins
+from utils import extract_mention_username, get_uinfo_from_admins, \
+    format_datetime
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -255,26 +256,18 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
         task_id = task.get("id", "Не указан")
         title = task.get("title", "Без названия")
         deadline = task.get("deadline", "Не указан")
-        responsible_id = task.get("responsibleId", "Не указан")
         # Получаем словарь с информацией об ответственном, если он присутствует
         responsible_info = task.get("responsible", {})
         responsible_name = responsible_info.get("name", "Не указан")
-        responsible_link = responsible_info.get("link", "")
-        group = task.get("group", [])
 
         task_text = (
             f"Задача ID: {task_id}\n"
             f"Название: {title}\n"
-            f"Дедлайн: {deadline}\n"
+            f"Дедлайн: {format_datetime(deadline)}\n"
             f"Ответственный (Имя): {responsible_name}\n"
-            f"Ссылка на профиль: {responsible_link}\n"
-            f"Группа: {group}\n"
-            "-----------------------------------------"
+            "----------------------"
         )
         report_lines.append(task_text)
 
     report_text = "\n".join(report_lines)
-    await update.message.reply_text(report_text)
-
-    report_text = "\n\n".join(report_lines)
     await update.message.reply_text(report_text)
