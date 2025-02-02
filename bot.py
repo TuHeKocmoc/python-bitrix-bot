@@ -44,7 +44,6 @@ def main():
                                            text_message_handler))
 
     init_db()
-    application.run_polling()
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
@@ -58,6 +57,7 @@ def main():
 
     delay_command_handler_daily_all(application, None)
 
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
