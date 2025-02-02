@@ -252,12 +252,29 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
     # Формируем текст отчёта
     report_lines = []
     for task in tasks:
-        title = task.get("TITLE", "Без названия")
-        deadline = task.get("DEADLINE", "Не указан")
-        responsible = task.get("RESPONSIBLE_ID", "Не указан")
-        report_lines.append(f"Просроченная Задача: {title}\n"
-                            f"Ответственный: {responsible}\n"
-                            f"Дедлайн: {deadline}")
+        task_id = task.get("id", "Не указан")
+        title = task.get("title", "Без названия")
+        deadline = task.get("deadline", "Не указан")
+        responsible_id = task.get("responsibleId", "Не указан")
+        # Получаем словарь с информацией об ответственном, если он присутствует
+        responsible_info = task.get("responsible", {})
+        responsible_name = responsible_info.get("name", "Не указан")
+        responsible_link = responsible_info.get("link", "")
+        group = task.get("group", [])
+
+        task_text = (
+            f"Задача ID: {task_id}\n"
+            f"Название: {title}\n"
+            f"Дедлайн: {deadline}\n"
+            f"Ответственный (Имя): {responsible_name}\n"
+            f"Ссылка на профиль: {responsible_link}\n"
+            f"Группа: {group}\n"
+            "-----------------------------------------"
+        )
+        report_lines.append(task_text)
+
+    report_text = "\n".join(report_lines)
+    await update.message.reply_text(report_text)
 
     report_text = "\n\n".join(report_lines)
     await update.message.reply_text(report_text)
