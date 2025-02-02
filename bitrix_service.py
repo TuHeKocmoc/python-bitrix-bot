@@ -1,5 +1,6 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
+from utils import format_datetime
 
 
 def create_task_in_bitrix(webhook, title, description=None, deadline=None,
@@ -147,3 +148,27 @@ def get_overdue_tasks(webhook: str) -> list[dict]:
     except Exception as e:
         print("Error fetching overdue tasks:", e)
         return []
+
+
+def get_overdue_tasks_report(bitrix_url: str) -> str:
+    tasks = get_overdue_tasks(bitrix_url)
+    if not tasks:
+        return "На данный момент нет просроченных задач."
+
+    report_lines = []
+    for task in tasks:
+        title = task.get("title", "Без названия")
+        deadline = task.get("deadline", "Не указан")
+        responsible_info = task.get("responsible", {})
+        responsible_name = responsible_info.get("name", "Не указан")
+
+        task_text = (
+            f"Задача: {title}\n"
+            f"Дедлайн: {format_datetime(deadline)}\n"
+            f"Ответственный: {responsible_name}\n"
+            "----------------------"
+        )
+        report_lines.append(task_text)
+
+    report_text = "🔥 **Просроченные задачи** 🔥\n\n" + "\n".join(report_lines)
+    return report_text

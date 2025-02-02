@@ -3,12 +3,12 @@ from telegram.ext import ContextTypes
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
-                            get_overdue_tasks)
+                            get_overdue_tasks_report)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
-                get_bitrix_id_for_user, set_user_chat_id)
+                get_bitrix_id_for_user, set_user_chat_id,
+                get_users_for_daily_report, set_main_chat_id)
 import logging
-from utils import extract_mention_username, get_uinfo_from_admins, \
-    format_datetime
+from utils import extract_mention_username, get_uinfo_from_admins
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -108,7 +108,8 @@ async def text_message_handler(update: Update,
                             f"Описание: {description}\n"
                             f"Дедлайн: {deadline}\n"
                             f"Ответственный: {responsible_id}\n"
-                            f"Соисполнители: {', '.join(map(str, accomplices))}\n"
+                            f"Соисполнители: {', '.join(map(str, 
+                                                            accomplices))}\n"
                             f"Чеклист: {', '.join(checklist)}")
 
             try:
@@ -211,8 +212,8 @@ async def notifications_command_handler(update: Update,
     telegram_id = update.effective_user.id
     chat_id = update.effective_chat.id
     telegram_user: User = update.effective_user
-    username = (
-                telegram_user.username or telegram_user.first_name or telegram_id)
+    username = (telegram_user.username or
+                telegram_user.first_name or telegram_id)
 
     user_row = get_user(telegram_id)
     if not user_row:
@@ -235,7 +236,8 @@ async def notifications_command_handler(update: Update,
         )
 
 
-async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def delay_command_handler(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
     bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
@@ -243,30 +245,50 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("Нет настроенного "
                                         "Bitrix URL для этой беседы.")
         return
+    report_text = get_overdue_tasks_report(bitrix_url)
+    await update.message.reply_text(report_text, parse_mode="Markdown")
 
-    tasks = get_overdue_tasks(bitrix_url)
-    if not tasks:
-        await update.message.reply_text("На данный момент нет "
-                                        "просроченных задач.")
+
+async def delay_command_handler_daily_all(application,
+                                          context: ContextTypes.DEFAULT_TYPE):
+    users = get_users_for_daily_report()
+    if not users:
+        logging.info("Нет пользователей для ежедневного отчета.")
         return
 
-    # Формируем текст отчёта
-    report_lines = []
-    for task in tasks:
-        title = task.get("title", "Без названия")
-        deadline = task.get("deadline", "Не указан")
-        # Получаем словарь с информацией об ответственном, если он присутствует
-        responsible_info = task.get("responsible", {})
-        responsible_name = responsible_info.get("name", "Не указан")
+    for user in users:
+        telegram_id, username, bitrix_url, main_chat_id = user
+        report_text = get_overdue_tasks_report(bitrix_url)
+        if not report_text:
+            report_text = "Нет просроченных задач."
+        try:
+            await application.bot.send_message(chat_id=main_chat_id,
+                                               text=report_text)
+            logging.info(f"Отчет для пользователя {username} отправлен "
+                         f"в чат {main_chat_id}.")
+        except Exception as e:
+            logging.error(f"Ошибка при отправке отчета для пользователя "
+                          f"{username} в чат {main_chat_id}: {e}")
 
-        task_text = (
-            f"Задача: {title}\n"
-            f"Дедлайн: {format_datetime(deadline)}\n"
-            f"Ответственный: {responsible_name}\n"
-            "----------------------"
+
+async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_user: User = update.effective_user
+    telegram_id = telegram_user.id
+    chat_id = update.effective_chat.id
+
+    user_row = get_user(telegram_id)
+    if not user_row:
+        username = (telegram_user.username or telegram_user.first_name or
+                    str(telegram_id))
+        add_user(telegram_id, username)
+
+    try:
+        set_main_chat_id(telegram_id, chat_id)
+        await update.message.reply_text(
+            f"Основная беседа установлена. (main_chat_id = {chat_id})"
         )
-        report_lines.append(task_text)
-
-    report_text = "\n".join(report_lines)
-    report_text = "🔥 **Просроченные задачи** 🔥\n\n" + report_text
-    await update.message.reply_text(report_text, parse_mode="Markdown")
+    except Exception as e:
+        logging.error(f"Ошибка при установке main_chat_id для пользователя {telegram_id}: {e}")
+        await update.message.reply_text(
+            "Ошибка при сохранении основной беседы. Попробуйте позже."
+        )

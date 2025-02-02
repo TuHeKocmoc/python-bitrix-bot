@@ -11,8 +11,11 @@ from handlers.admin import admin_command_handler, ainfo_command_handler
 from handlers.main import (start_handler, text_message_handler,
                            info_command_handler, url_command_handler,
                            bitrixid_command_handler, delay_command_handler,
-                           notifications_command_handler)
+                           notifications_command_handler,
+                           delay_command_handler_daily_all,
+                           main_command_handler)
 import logging
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -35,12 +38,25 @@ def main():
         CommandHandler("notifications", notifications_command_handler))
     application.add_handler(CommandHandler("delay",
                                            delay_command_handler))
+    application.add_handler(CommandHandler("main", main_command_handler))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))
 
     init_db()
     application.run_polling()
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        delay_command_handler_daily_all,
+        "cron",
+        hour=10,
+        minute=0,
+        args=[application, None]
+    )
+    scheduler.start()
+
+    # delay_command_handler_daily_all(application, None)
 
 
 if __name__ == "__main__":

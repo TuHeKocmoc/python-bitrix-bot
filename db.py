@@ -26,6 +26,7 @@ def init_db():
           bitrix_id BIGINT DEFAULT NULL,
           is_enabled TINYINT DEFAULT 0,
           chat_id BIGINT DEFAULT NULL,
+          main_chat_id BIGINT DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
@@ -188,6 +189,35 @@ def set_user_chat_id(telegram_id: int, chat_id: int):
         SET chat_id = %s
         WHERE telegram_id = %s
     """, (chat_id, telegram_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def get_users_for_daily_report() -> list[tuple]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT telegram_id, username, bitrix_url, main_chat_id
+        FROM users
+        WHERE main_chat_id IS NOT NULL 
+          AND bitrix_url IS NOT NULL 
+          AND bitrix_url <> ''
+    """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+
+def set_main_chat_id(telegram_id: int, main_chat_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET main_chat_id = %s 
+        WHERE telegram_id = %s
+    """, (main_chat_id, telegram_id))
     conn.commit()
     cursor.close()
     conn.close()
