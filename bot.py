@@ -10,7 +10,7 @@ from db import init_db
 from handlers.admin import admin_command_handler, ainfo_command_handler
 from handlers.main import (start_handler, text_message_handler,
                            info_command_handler, url_command_handler,
-                           bitrixid_command_handler,
+                           bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler)
 import logging
 

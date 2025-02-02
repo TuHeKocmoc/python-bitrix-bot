@@ -2,7 +2,8 @@ from telegram import Update, User
 from telegram.ext import ContextTypes
 
 from openai_service import parse_message_with_openai
-from bitrix_service import create_task_in_bitrix, get_user_id_from_webhook
+from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
+                            get_overdue_tasks)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id)
 import logging
