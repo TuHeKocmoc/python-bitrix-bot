@@ -63,7 +63,7 @@ def parse_message_with_openai(message_text: str,
     """
 
     try:
-        response = client.chat.completions.create(model="o1-preview",
+        response = client.chat.completions.create(model="o1-mini",
                                                   messages=[
                                                       {"role": "user",
                                                        "content": prompt}
