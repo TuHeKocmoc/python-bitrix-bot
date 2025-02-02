@@ -221,11 +221,42 @@ async def notifications_command_handler(update: Update,
                          chat_id)
 
         await update.message.reply_text(
-            f"Ваш ID беседы (chat_id) сохранён: {chat_id}. Теперь я буду отслеживать уведомления в этой беседе."
+            f"Ваш ID беседы (chat_id) сохранён: {chat_id}. "
+            f"Теперь я буду писать уведомления в этой беседе."
         )
     except Exception as e:
         logging.error(
-            f"Ошибка при сохранении chat_id для пользователя {telegram_id}: {e}")
+            f"Ошибка при сохранении chat_id для пользователя {telegram_id}: "
+            f"{e}")
         await update.message.reply_text(
             "Ошибка при сохранении ID беседы. Попробуйте позже."
         )
+
+
+async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного "
+                                        "Bitrix URL для этой беседы.")
+        return
+
+    tasks = get_overdue_tasks(bitrix_url)
+    if not tasks:
+        await update.message.reply_text("На данный момент нет "
+                                        "просроченных задач.")
+        return
+
+    # Формируем текст отчёта
+    report_lines = []
+    for task in tasks:
+        title = task.get("TITLE", "Без названия")
+        deadline = task.get("DEADLINE", "Не указан")
+        responsible = task.get("RESPONSIBLE_ID", "Не указан")
+        report_lines.append(f"Просроченная Задача: {title}\n"
+                            f"Ответственный: {responsible}\n"
+                            f"Дедлайн: {deadline}")
+
+    report_text = "\n\n".join(report_lines)
+    await update.message.reply_text(report_text)

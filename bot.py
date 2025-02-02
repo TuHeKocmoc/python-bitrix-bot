@@ -33,6 +33,8 @@ def main():
         CommandHandler("bitrixid", bitrixid_command_handler))
     application.add_handler(
         CommandHandler("notifications", notifications_command_handler))
+    application.add_handler(CommandHandler("delay",
+                                           delay_command_handler))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))

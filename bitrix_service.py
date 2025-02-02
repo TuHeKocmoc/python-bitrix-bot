@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timedelta
 
 
 def create_task_in_bitrix(webhook, title, description=None, deadline=None,
@@ -108,3 +109,41 @@ def add_checklist_to_task(webhook, task_id, checklist):
     except Exception as e:
         print("Bitrix error:", e)
         return None
+
+
+def get_overdue_tasks(webhook: str) -> list[dict]:
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+
+    url = f"{webhook}tasks.task.list.json"
+    data = {
+        "filter": {
+            "<DEADLINE": current_time,
+            ">=REAL_STATUS": "1",
+            "<=REAL_STATUS": "4"
+        },
+        "select": ["ID", "TITLE", "DEADLINE", "RESPONSIBLE_ID", "status",
+                   "notViewed"]
+    }
+
+    try:
+        resp = requests.post(url, json=data)
+        resp_data = resp.json()
+        print("STATUS CODE:", resp.status_code)
+        print("RESPONSE:", resp.text)
+        if "result" in resp_data:
+            result = resp_data["result"]
+            if isinstance(result, list):
+                tasks = result
+            elif isinstance(result, dict) and "tasks" in result:
+                tasks = result["tasks"]
+            else:
+                tasks = []
+            return tasks
+        else:
+            print("Ошибка получения задач:",
+                  resp_data.get("error_description"))
+            return []
+    except Exception as e:
+        print("Error fetching overdue tasks:", e)
+        return []
