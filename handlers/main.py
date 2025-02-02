@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
-                            get_overdue_tasks_report,
+                            get_overdue_tasks_report, get_my_projects,
                             get_completed_tasks_report)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
@@ -53,13 +53,29 @@ async def text_message_handler(update: Update,
     text = update.message.text
     chat_id = update.effective_chat.id
 
-    parsed = parse_message_with_openai(text)
+    url, group_id = await get_uinfo_from_admins(chat_id, context)
+    if not url:
+        await update.message.reply_text("Не задан URL")
+        return
+
+    projects = get_my_projects(url)
+    project_names = [project.get("NAME") for project in projects if
+                     project.get("NAME")]
+    parsed = parse_message_with_openai(text, available_projects=project_names)
 
     if parsed.get("is_task"):
         title = parsed.get("title", "Без названия")
         deadline = parsed.get("deadline", "")
         description = parsed.get("description", "")
         checklist = parsed.get("checklist", [])
+
+        project_name = parsed.get("project", "").strip()
+        group_id = None
+        if project_name and projects:
+            for proj in projects:
+                if proj.get("NAME", "").lower() == project_name.lower():
+                    group_id = proj.get("ID")
+                    break
 
         reply_user = None
         mention_user = extract_mention_username(
@@ -86,11 +102,6 @@ async def text_message_handler(update: Update,
                     f"fallback на админа")
             if b_id:
                 bitrix_executors.append(b_id)
-
-        url, group_id = await get_uinfo_from_admins(chat_id, context)
-        if not url:
-            await update.message.reply_text("Не задан URL")
-            return
 
         responsible_id = bitrix_executors[0] \
             if bitrix_executors else get_user_id_from_webhook(url)

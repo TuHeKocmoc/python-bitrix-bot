@@ -5,7 +5,8 @@ from utils import format_datetime
 
 def create_task_in_bitrix(webhook, title, description=None, deadline=None,
                           responsible: int = None, checklist: list[str] = None,
-                          accomplices: list[int] = None):
+                          accomplices: list[int] = None,
+                          group_id: int = None):
     url = f"{webhook}tasks.task.add.json"
 
     fields = {"TITLE": title,
@@ -13,6 +14,7 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
               "RESPONSIBLE_ID": responsible if responsible else 1,
               "DESCRIPTION": description if description else "",
               "ACCOMPLICES": accomplices if accomplices else [],
+              "GROUP_ID": group_id if group_id else "",
               }
 
     data = {
@@ -222,3 +224,22 @@ def get_completed_tasks_report(webhook: str, start_date: str,
             return f"Ошибка получения задач: {error_desc}"
     except Exception as e:
         return f"Ошибка при запросе: {e}"
+
+
+def get_my_projects(webhook: str) -> list[dict]:
+    url = f"{webhook}sonet_group.get.json"
+
+    data = {}
+
+    try:
+        resp = requests.post(url, json=data)
+        resp_data = resp.json()
+        if "result" in resp_data:
+            return resp_data["result"]
+        else:
+            print("Ошибка получения проектов:",
+                  resp_data.get("error_description"))
+            return []
+    except Exception as e:
+        print("Ошибка при запросе проектов:", e)
+        return []

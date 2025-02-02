@@ -224,10 +224,6 @@ def set_main_chat_id(telegram_id: int, main_chat_id: int):
 
 
 def get_users_for_weekly_report() -> list[tuple]:
-    """
-    Возвращает список пользователей из таблицы users, у которых поле bitrix_url заполнено.
-    Каждая строка имеет вид (telegram_id, username, bitrix_url).
-    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
