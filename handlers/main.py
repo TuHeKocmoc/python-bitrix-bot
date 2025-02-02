@@ -6,8 +6,7 @@ from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
                             get_overdue_tasks_report,
                             get_completed_tasks_report)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
-                get_bitrix_id_for_user, set_user_chat_id,
-                get_users_for_daily_report, set_main_chat_id)
+                get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
 import logging
 from utils import extract_mention_username, get_uinfo_from_admins
 from datetime import datetime, timedelta
@@ -252,30 +251,8 @@ async def delay_command_handler(update: Update,
     await update.message.reply_text(report_text, parse_mode="Markdown")
 
 
-async def delay_command_handler_daily_all(application,
-                                          context: ContextTypes.DEFAULT_TYPE):
-    users = get_users_for_daily_report()
-    if not users:
-        logging.info("Нет пользователей для ежедневного отчета.")
-        return
-
-    for user in users:
-        telegram_id, username, bitrix_url, main_chat_id = user
-        report_text = get_overdue_tasks_report(bitrix_url)
-        if not report_text:
-            report_text = "Нет просроченных задач."
-        try:
-            await application.bot.send_message(chat_id=main_chat_id,
-                                               text=report_text,
-                                               parse_mode="Markdown")
-            logging.info(f"Отчет для пользователя {username} отправлен "
-                         f"в чат {main_chat_id}.")
-        except Exception as e:
-            logging.error(f"Ошибка при отправке отчета для пользователя "
-                          f"{username} в чат {main_chat_id}: {e}")
-
-
-async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def main_command_handler(update: Update,
+                               context: ContextTypes.DEFAULT_TYPE):
     telegram_user: User = update.effective_user
     telegram_id = telegram_user.id
     chat_id = update.effective_chat.id
@@ -292,7 +269,8 @@ async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             f"Основная беседа установлена. (main_chat_id = {chat_id})"
         )
     except Exception as e:
-        logging.error(f"Ошибка при установке main_chat_id для пользователя {telegram_id}: {e}")
+        logging.error(f"Ошибка при установке main_chat_id для пользователя "
+                      f"{telegram_id}: {e}")
         await update.message.reply_text(
             "Ошибка при сохранении основной беседы. Попробуйте позже."
         )

@@ -213,7 +213,7 @@ def get_completed_tasks_report(webhook: str, start_date: str,
             lines = []
             for responsible_name, cnt in counts.items():
                 lines.append(
-                    f"Сотрудник (Bitrix ID: {responsible_name}) "
+                    f"Сотрудник ({responsible_name}) "
                     f"выполнил {cnt} задач за неделю.")
             return "\n".join(lines)
         else:

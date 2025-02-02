@@ -221,3 +221,21 @@ def set_main_chat_id(telegram_id: int, main_chat_id: int):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+def get_users_for_weekly_report() -> list[tuple]:
+    """
+    Возвращает список пользователей из таблицы users, у которых поле bitrix_url заполнено.
+    Каждая строка имеет вид (telegram_id, username, bitrix_url).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT telegram_id, username, bitrix_url
+        FROM users
+        WHERE bitrix_url IS NOT NULL AND bitrix_url <> ''
+    """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
