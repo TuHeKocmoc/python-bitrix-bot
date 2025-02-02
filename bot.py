@@ -56,7 +56,7 @@ def main():
     )
     scheduler.start()
 
-    # delay_command_handler_daily_all(application, None)
+    delay_command_handler_daily_all(application, None)
 
 
 if __name__ == "__main__":
