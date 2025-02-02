@@ -117,7 +117,7 @@ async def text_message_handler(update: Update,
             await update.message.reply_text(
                 f"👍"
             )
-        if group_id:
+        if notification_group_id:
             task_details = (f"Задача создана: {title}\n"
                             f"Описание: {description}\n"
                             f"Дедлайн: {deadline}\n"
