@@ -303,7 +303,6 @@ async def report_command_handler(update: Update,
     now = datetime.now()
     one_week_ago = now - timedelta(days=7)
 
-    # Форматируем даты в ISO с часовым поясом (например, +03:00)
     start_date = one_week_ago.strftime("%Y-%m-%dT%H:%M:%S+03:00")
     end_date = now.strftime("%Y-%m-%dT%H:%M:%S+03:00")
 
