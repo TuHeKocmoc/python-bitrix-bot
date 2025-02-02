@@ -108,8 +108,8 @@ async def text_message_handler(update: Update,
                             f"Описание: {description}\n"
                             f"Дедлайн: {deadline}\n"
                             f"Ответственный: {responsible_id}\n"
-                            f"Соисполнители: {', '.join(map(str, 
-                                                            accomplices))}\n"
+                            f"Соисполнители: "
+                            f"{', '.join(map(str, accomplices))}\n"
                             f"Чеклист: {', '.join(checklist)}")
 
             try:
