@@ -269,4 +269,4 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     report_text = "\n".join(report_lines)
     report_text = "🔥 **Просроченные задачи** 🔥\n\n" + report_text
-    await update.message.reply_text(report_text)
+    await update.message.reply_text(report_text, parse_mode="Markdown")
