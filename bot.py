@@ -13,7 +13,7 @@ from handlers.main import (start_handler, text_message_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
                            delay_command_handler_daily_all,
-                           main_command_handler)
+                           main_command_handler, report_command_handler)
 import logging
 import asyncio
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -40,6 +40,7 @@ def main():
     application.add_handler(CommandHandler("delay",
                                            delay_command_handler))
     application.add_handler(CommandHandler("main", main_command_handler))
+    application.add_handler(CommandHandler("report", report_command_handler))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))

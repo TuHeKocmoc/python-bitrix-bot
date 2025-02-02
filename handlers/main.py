@@ -3,12 +3,15 @@ from telegram.ext import ContextTypes
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
-                            get_overdue_tasks_report)
+                            get_overdue_tasks_report,
+                            get_completed_tasks_report)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id,
                 get_users_for_daily_report, set_main_chat_id)
 import logging
 from utils import extract_mention_username, get_uinfo_from_admins
+from datetime import datetime, timedelta
+import asyncio
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -293,3 +296,26 @@ async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text(
             "Ошибка при сохранении основной беседы. Попробуйте позже."
         )
+
+
+async def report_command_handler(update: Update,
+                                 context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного "
+                                        "Bitrix URL для этой беседы.")
+        return
+    now = datetime.now()
+    one_week_ago = now - timedelta(days=7)
+
+    # Форматируем даты в ISO с часовым поясом (например, +03:00)
+    start_date = one_week_ago.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+    end_date = now.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+
+    # Получаем отчет через синхронную функцию в отдельном потоке
+    report_text = await asyncio.to_thread(get_completed_tasks_report,
+                                          bitrix_url, start_date, end_date)
+
+    await update.message.reply_text(report_text)

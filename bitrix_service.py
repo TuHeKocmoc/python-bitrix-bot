@@ -172,3 +172,53 @@ def get_overdue_tasks_report(bitrix_url: str) -> str:
 
     report_text = "🔥 **Просроченные задачи** 🔥\n\n" + "\n".join(report_lines)
     return report_text
+
+
+def get_completed_tasks_report(webhook: str, start_date: str,
+                               end_date: str) -> str:
+    url = f"{webhook}tasks.task.list.json"
+    data = {
+        "filter": {
+            "STATUS": "5",
+            ">=CLOSED_DATE": start_date,
+            "<=CLOSED_DATE": end_date
+        },
+        "select": ["ID", "TITLE", "CLOSED_DATE", "RESPONSIBLE_ID"]
+    }
+    try:
+        resp = requests.post(url, json=data)
+        resp_data = resp.json()
+        if "result" in resp_data:
+            result = resp_data["result"]
+            if isinstance(result, dict) and "tasks" in result:
+                tasks = result["tasks"]
+            elif isinstance(result, list):
+                tasks = result
+            else:
+                tasks = []
+            if not tasks:
+                return "За прошедшую неделю завершённых задач не найдено."
+
+            counts = {}
+            for task in tasks:
+                responsible_info = task.get("responsible", {})
+                responsible_name = responsible_info.get("name", "Не указан")
+                if responsible_name:
+                    counts[responsible_name] = (
+                            counts.get(responsible_name, 0) + 1)
+
+            if not counts:
+                return "За прошедшую неделю завершённых задач не найдено."
+
+            lines = []
+            for responsible_name, cnt in counts.items():
+                lines.append(
+                    f"Сотрудник (Bitrix ID: {responsible_name}) "
+                    f"выполнил {cnt} задач за неделю.")
+            return "\n".join(lines)
+        else:
+            error_desc = resp_data.get("error_description",
+                                       "Неизвестная ошибка")
+            return f"Ошибка получения задач: {error_desc}"
+    except Exception as e:
+        return f"Ошибка при запросе: {e}"
