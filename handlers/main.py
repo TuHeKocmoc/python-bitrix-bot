@@ -52,6 +52,8 @@ async def text_message_handler(update: Update,
         return
     text = update.message.text
     chat_id = update.effective_chat.id
+    if '#задача' not in text:
+        return
 
     url, notification_group_id = await get_uinfo_from_admins(chat_id, context)
     if not url:
