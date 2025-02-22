@@ -69,7 +69,7 @@ async def text_message_handler(update: Update,
         file_id = voice.file_id
         file = context.bot.get_file(file_id)
         ogg_path = "input.ogg"
-        file.download(ogg_path)
+        await file.download_to_drive(ogg_path)
         wav_path = "output.wav"
         AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
         try:
