@@ -68,7 +68,9 @@ async def text_message_handler(update: Update,
         ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
         await file.download_to_drive(ogg_path)
         wav_path = f"temp_{uuid.uuid4().hex}.wav"
-        AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
+        audio = AudioSegment.from_file(ogg_path, format="ogg")
+        audio = audio.set_frame_rate(16000).set_channels(1)
+        audio.export(wav_path, format="wav")
         try:
             recognized_text = transcribe_wav_tinkoff(wav_path)
             logging.debug(f"Распознанный текст: {recognized_text}")
