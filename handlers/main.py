@@ -71,6 +71,7 @@ async def text_message_handler(update: Update,
         AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
         try:
             recognized_text = transcribe_wav_tinkoff(wav_path)
+            logging.debug(f"Распознанный текст: {recognized_text}")
             if recognized_text.strip():
                 text = recognized_text.strip()
                 if 'задача' not in text:
