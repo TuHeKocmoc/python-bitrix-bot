@@ -102,10 +102,9 @@ def main():
     application.add_handler(CommandHandler("report", report_command_handler))
     application.add_handler(CommandHandler("tasks", tasks_command_handler))
 
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
+    application.add_handler(MessageHandler(filters.TEXT & filters.VOICE
+                                           & ~filters.COMMAND,
                                            text_message_handler))
-    application.add_handler(MessageHandler(filters.VOICE,
-                                           voice_message_handler))
     # application.add_handler(
     #     CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
 
