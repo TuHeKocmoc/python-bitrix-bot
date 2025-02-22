@@ -533,8 +533,8 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             f"Статус: {real_status}\n"
             f"Дедлайн: {deadline_str}\n"
             f"Дата закрытия: {closed_date_str}\n"
-            f"Ответственный: {get_user_name_from_bitrix(bitrix_url, 
-                                                        responsible_id)}\n"
+            f"Ответственный: "
+            f"{get_user_name_from_bitrix(bitrix_url, responsible_id)}\n"
             f"Проект (GROUP_ID): {group_id}\n"
             "----------------------"
         )
