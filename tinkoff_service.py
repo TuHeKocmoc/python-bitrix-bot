@@ -8,7 +8,7 @@ stt_client = ClientSTT(TINKOFF_API_KEY, TINKOFF_SECRET_KEY)
 def transcribe_wav_tinkoff(wav_path: str) -> str:
     config = {
         "encoding": "LINEAR16",
-        "sample_rate_hertz": 16000,
+        "sample_rate_hertz": 48000,
         "num_channels": 1,
         "language_code": "ru-RU",
         "enable_automatic_punctuation": True
