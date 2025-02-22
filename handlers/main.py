@@ -269,7 +269,7 @@ async def delay_command_handler(update: Update,
         bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
     else:
         user_id = update.effective_user.id
-        bitrix_url = await get_url(user_id)
+        bitrix_url = get_url(user_id)
 
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "
@@ -314,7 +314,7 @@ async def report_command_handler(update: Update,
         bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
     else:
         user_id = update.effective_user.id
-        bitrix_url = await get_url(user_id)
+        bitrix_url = get_url(user_id)
 
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "
