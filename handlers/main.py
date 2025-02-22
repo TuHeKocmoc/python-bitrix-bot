@@ -10,7 +10,8 @@ from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
 import logging
-from utils import extract_mention_username, get_uinfo_from_admins
+from utils import (extract_mention_username, get_url_by_type,
+                   get_uinfo_from_admins)
 from datetime import datetime, timedelta
 import asyncio
 
@@ -281,11 +282,7 @@ async def delay_command_handler(update: Update,
                                 context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
-    if chat_type in ["group", "supergroup"]:
-        bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
-    else:
-        user_id = update.effective_user.id
-        bitrix_url = get_url(user_id)
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
 
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "
@@ -324,12 +321,7 @@ async def report_command_handler(update: Update,
                                  context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
-
-    if chat_type in ["group", "supergroup"]:
-        bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
-    else:
-        user_id = update.effective_user.id
-        bitrix_url = get_url(user_id)
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
 
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "

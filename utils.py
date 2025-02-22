@@ -1,5 +1,5 @@
 from telegram.ext import ContextTypes
-from db import get_user
+from db import get_user, get_url
 from datetime import datetime
 
 
@@ -7,8 +7,19 @@ def extract_mention_username(message):
     entities = message.entities or []
     for ent in entities:
         if ent.type == "mention":
-            mention_text = message.text[ent.offset:ent.offset+ent.length]
+            mention_text = message.text[ent.offset:ent.offset + ent.length]
             return mention_text[1:]
+    return None
+
+
+async def get_url_by_type(chat_id: int, chat_type: str,
+                          context: ContextTypes.DEFAULT_TYPE):
+    if chat_type == "private":
+        user_row = get_url(chat_id)
+        if user_row:
+            return user_row
+    elif chat_type == "group" or chat_type == "supergroup":
+        return await get_uinfo_from_admins(chat_id, context)[0]
     return None
 
 

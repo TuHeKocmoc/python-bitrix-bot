@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from apscheduler.triggers.cron import CronTrigger
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -18,8 +19,7 @@ from handlers.main import (start_handler, text_message_handler,
                            main_command_handler, report_command_handler)
 import logging
 import asyncio
-from apscheduler.schedulers.background import BackgroundScheduler
-
+from apscheduler import Scheduler
 logging.basicConfig(
     filename='bot.log',
     filemode='w',
@@ -104,23 +104,24 @@ def main():
 
     init_db()
 
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        delay_command_handler_daily_all,
-        "cron",
-        hour=10,
-        minute=0,
-        args=[application, None]
-    )
-    scheduler.add_job(
-        weekly_report_job_wrapper,
-        'cron',
-        day_of_week='sun',
-        hour=20,
-        minute=0,
-        args=[application]
-    )
-    scheduler.start()
+    with Scheduler() as scheduler:
+        daily_trigger = CronTrigger(hour=10, minute=0)
+        weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
+
+        scheduler.add_schedule(
+            delay_command_handler_daily_all,
+            daily_trigger,
+            args=[application, None],
+            id='daily_task'
+        )
+
+        scheduler.add_schedule(
+            weekly_report_job_wrapper,
+            weekly_trigger,
+            args=[application],
+            id='weekly_task'
+        )
+        scheduler.start_in_background()
 
     application.run_polling()
 

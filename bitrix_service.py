@@ -83,7 +83,6 @@ def update_task_in_bitrix(webhook,
     if group_id is not None:
         fields["GROUP_ID"] = group_id
 
-
     if not fields and not checklist:
         logging.debug("Нечего обновлять: поля и чеклист пусты.")
         return None
