@@ -560,7 +560,7 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             f"Дедлайн: {deadline_esc}\n"
             f"Дата закрытия: {closed_date_esc}\n"
             f"Ответственный: {responsible_name_esc}\n"
-            f"Проект (GROUP_ID): {group_id_esc}\n"
+            f"Проект: {group_id_esc}\n"
             f"{escape_markdown('----------------------', version=2)}"
         )
         report_lines.append(task_text)
