@@ -22,6 +22,8 @@ import asyncio
 from pydub import AudioSegment
 import os
 
+AudioSegment.converter = "/usr/local/bin/ffmpeg"
+
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("start_handler called")
