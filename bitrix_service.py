@@ -58,6 +58,82 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
     return resp_data
 
 
+def update_task_in_bitrix(webhook,
+                          task_id: int,
+                          title: str = None,
+                          description: str = None,
+                          deadline: str = None,
+                          responsible: int = None,
+                          accomplices: list[int] = None,
+                          group_id: int = None,
+                          checklist: list[str] = None):
+    update_url = f"{webhook}tasks.task.update.json"
+
+    fields = {}
+    if title is not None:
+        fields["TITLE"] = title
+    if description is not None:
+        fields["DESCRIPTION"] = description
+    if deadline is not None:
+        fields["DEADLINE"] = deadline
+    if responsible is not None:
+        fields["RESPONSIBLE_ID"] = responsible
+    if accomplices is not None:
+        fields["ACCOMPLICES"] = accomplices
+    if group_id is not None:
+        fields["GROUP_ID"] = group_id
+
+
+    if not fields and not checklist:
+        logging.debug("Нечего обновлять: поля и чеклист пусты.")
+        return None
+
+    data = {
+        "taskId": task_id,
+        "fields": fields
+    }
+
+    try:
+        resp = requests.post(update_url, json=data)
+        resp_data = resp.json()
+        logging.debug("STATUS CODE: %s", resp.status_code)
+        logging.debug("RESPONSE: %s", resp.text)
+        if not resp_data.get("result"):
+            logging.error(f"Ошибка при обновлении задачи {task_id}: "
+                          f"{resp_data.get('error_description')}")
+            return None
+    except Exception as e:
+        logging.error("Bitrix update error: %s", e)
+        return None
+
+    if checklist:
+        checklist_url = f"{webhook}task.checklistitem.add.json"
+        for item in checklist:
+            checklist_data = {
+                "TASKID": task_id,
+                "FIELDS": {
+                    "TITLE": item,
+                    "IS_COMPLETE": "N",
+                    "SORT_INDEX": 10
+                }
+            }
+            try:
+                checklist_resp = requests.post(checklist_url,
+                                               json=checklist_data)
+                checklist_resp_data = checklist_resp.json()
+                if checklist_resp_data.get('result'):
+                    logging.debug(f"Пункт чеклиста '{item}' добавлен.")
+                else:
+                    logging.error(
+                        f"Ошибка при добавлении пункта чеклиста '{item}': "
+                        f"{checklist_resp_data.get('error_description')}")
+            except Exception as e:
+                logging.error(
+                    f"Ошибка при добавлении пункта чеклиста '{item}': {e}")
+
+    return resp_data
+
+
 def get_user_id_from_webhook(webhook: str):
     url = f"{webhook}user.current.json"
 
@@ -65,7 +141,6 @@ def get_user_id_from_webhook(webhook: str):
         resp = requests.post(url)
         resp.raise_for_status()
         data = resp.json()
-        # Обычно data выглядит так:
         # {
         #   "result": {
         #       "ID": "123",
@@ -75,12 +150,10 @@ def get_user_id_from_webhook(webhook: str):
         #   "time": {...}
         # }
         if "result" in data and isinstance(data["result"], dict):
-            # Берём поле "ID"
             user_info = data["result"]
             bitrix_id_str = user_info.get("ID")
             if bitrix_id_str:
                 return int(bitrix_id_str)
-        # Иначе
         print("Bitrix error:", data.get("error"),
               data.get("error_description"))
         return None

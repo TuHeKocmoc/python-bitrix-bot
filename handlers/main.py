@@ -67,99 +67,98 @@ async def text_message_handler(update: Update,
                      project.get("NAME")]
     parsed = parse_message_with_openai(text, available_projects=project_names)
 
-    if parsed.get("is_task"):
-        title = parsed.get("title", "Без названия")
-        deadline = parsed.get("deadline", "")
-        description = parsed.get("description", "")
-        checklist = parsed.get("checklist", [])
+    title = parsed.get("title", "Без названия")
+    deadline = parsed.get("deadline", "")
+    description = parsed.get("description", "")
+    checklist = parsed.get("checklist", [])
 
-        project_name = parsed.get("project", "").strip()
-        group_id = None
-        if project_name and projects:
-            for proj in projects:
-                if proj.get("NAME", "").lower() == project_name.lower():
-                    group_id = proj.get("ID")
-                    break
+    project_name = parsed.get("project", "").strip()
+    group_id = None
+    if project_name and projects:
+        for proj in projects:
+            if proj.get("NAME", "").lower() == project_name.lower():
+                group_id = proj.get("ID")
+                break
 
-        reply_user = None
-        mention_user = extract_mention_username(
-            update.message)
-        if update.message.reply_to_message:
-            reply_user_obj = update.message.reply_to_message.from_user
-            if reply_user_obj.username:
-                reply_user = reply_user_obj.username
+    reply_user = None
+    mention_user = extract_mention_username(
+        update.message)
+    if update.message.reply_to_message:
+        reply_user_obj = update.message.reply_to_message.from_user
+        if reply_user_obj.username:
+            reply_user = reply_user_obj.username
 
-        executors = []
-        if mention_user and reply_user:
-            executors = [mention_user, reply_user]
-        elif mention_user:
-            executors = [mention_user]
-        elif reply_user:
-            executors = [reply_user]
+    executors = []
+    if mention_user and reply_user:
+        executors = [mention_user, reply_user]
+    elif mention_user:
+        executors = [mention_user]
+    elif reply_user:
+        executors = [reply_user]
 
-        bitrix_executors = []
-        for exec_username in executors:
-            b_id = get_bitrix_id_for_user(exec_username)
-            if not b_id:
-                logging.info(
-                    f"Не найден bitrix_id для user {exec_username}, "
-                    f"fallback на админа")
-            if b_id:
-                bitrix_executors.append(b_id)
+    bitrix_executors = []
+    for exec_username in executors:
+        b_id = get_bitrix_id_for_user(exec_username)
+        if not b_id:
+            logging.info(
+                f"Не найден bitrix_id для user {exec_username}, "
+                f"fallback на админа")
+        if b_id:
+            bitrix_executors.append(b_id)
 
-        responsible_id = bitrix_executors[0] \
-            if bitrix_executors else get_user_id_from_webhook(url)
-        accomplices = bitrix_executors[1:] if len(bitrix_executors) > 1 else []
-        if not url:
-            await update.message.reply_text("Не задан URL")
-            return
+    responsible_id = bitrix_executors[0] \
+        if bitrix_executors else get_user_id_from_webhook(url)
+    accomplices = bitrix_executors[1:] if len(bitrix_executors) > 1 else []
+    if not url:
+        await update.message.reply_text("Не задан URL")
+        return
 
-        result = create_task_in_bitrix(url, title, description, deadline,
-                                       responsible_id, checklist, accomplices,
-                                       group_id)
-        if result:
-            await update.message.reply_text(
-                f"Задача поставлена!"
+    result = create_task_in_bitrix(url, title, description, deadline,
+                                   responsible_id, checklist, accomplices,
+                                   group_id)
+    if result:
+        await update.message.reply_text(
+            f"Задача поставлена!"
+        )
+    if notification_group_id:
+        title_escaped = escape_markdown(title, version=2)
+        description_escaped = escape_markdown(description, version=2)
+        deadline_escaped = escape_markdown(deadline, version=2)
+        project_name_escaped = escape_markdown(project_name, version=2)
+        responsible_id_escaped = escape_markdown(str(responsible_id),
+                                                 version=2)
+        accomplices_escaped = [escape_markdown(str(a), version=2) for a in
+                               accomplices]
+        checklist_escaped = [escape_markdown(item, version=2) for item in
+                             checklist]
+
+        lines = [f"*Задача создана:* {title_escaped}"]
+        if description_escaped:
+            lines.append(f"*Описание:* {description_escaped}")
+        if deadline_escaped:
+            lines.append(f"*Дедлайн:* {deadline_escaped}")
+        if project_name_escaped:
+            lines.append(f"*Проект:* {project_name_escaped}")
+        if responsible_id_escaped:
+            lines.append(f"*Ответственный:* {responsible_id_escaped}")
+        if accomplices_escaped:
+            lines.append(
+                f"*Соисполнители:* {', '.join(accomplices_escaped)}")
+        if checklist_escaped:
+            lines.append(f"*Чеклист:* {', '.join(checklist_escaped)}")
+        task_details = "\n".join(lines)
+
+        try:
+            await context.bot.send_message(
+                notification_group_id,
+                task_details,
+                parse_mode=ParseMode.MARKDOWN_V2
             )
-        if notification_group_id:
-            title_escaped = escape_markdown(title, version=2)
-            description_escaped = escape_markdown(description, version=2)
-            deadline_escaped = escape_markdown(deadline, version=2)
-            project_name_escaped = escape_markdown(project_name, version=2)
-            responsible_id_escaped = escape_markdown(str(responsible_id),
-                                                     version=2)
-            accomplices_escaped = [escape_markdown(str(a), version=2) for a in
-                                   accomplices]
-            checklist_escaped = [escape_markdown(item, version=2) for item in
-                                 checklist]
 
-            lines = [f"*Задача создана:* {title_escaped}"]
-            if description_escaped:
-                lines.append(f"*Описание:* {description_escaped}")
-            if deadline_escaped:
-                lines.append(f"*Дедлайн:* {deadline_escaped}")
-            if project_name_escaped:
-                lines.append(f"*Проект:* {project_name_escaped}")
-            if responsible_id_escaped:
-                lines.append(f"*Ответственный:* {responsible_id_escaped}")
-            if accomplices_escaped:
-                lines.append(
-                    f"*Соисполнители:* {', '.join(accomplices_escaped)}")
-            if checklist_escaped:
-                lines.append(f"*Чеклист:* {', '.join(checklist_escaped)}")
-            task_details = "\n".join(lines)
-
-            try:
-                await context.bot.send_message(
-                    notification_group_id,
-                    task_details,
-                    parse_mode=ParseMode.MARKDOWN_V2
-                )
-
-            except Exception as e:
-                logging.error(f"Ошибка при отправке сообщения в группу: {e}")
-                await update.message.reply_text(
-                    f"Ошибка при отправке информации в группу.")
+        except Exception as e:
+            logging.error(f"Ошибка при отправке сообщения в группу: {e}")
+            await update.message.reply_text(
+                f"Ошибка при отправке информации в группу.")
 
 
 async def info_command_handler(update: Update,
@@ -280,7 +279,6 @@ async def notifications_command_handler(update: Update,
 
 async def delay_command_handler(update: Update,
                                 context: ContextTypes.DEFAULT_TYPE):
-
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     if chat_type in ["group", "supergroup"]:
@@ -324,7 +322,6 @@ async def main_command_handler(update: Update,
 
 async def report_command_handler(update: Update,
                                  context: ContextTypes.DEFAULT_TYPE):
-
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
 
