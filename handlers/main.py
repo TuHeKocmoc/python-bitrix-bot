@@ -1,5 +1,6 @@
 from telegram import Update, User
 from telegram.ext import ContextTypes
+from telegram.constants import ParseMode
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
@@ -117,22 +118,26 @@ async def text_message_handler(update: Update,
                                        group_id)
         if result:
             await update.message.reply_text(
-                f"👍"
+                f"Задача поставлена!"
             )
         if notification_group_id:
-            task_details = (f"Задача создана: {title}\n"
-                            f"Описание: {description}\n"
-                            f"Дедлайн: {deadline}\n"
-                            f"Проект: {project_name}\n"
-                            f"Ответственный: {responsible_id}\n"
-                            f"Соисполнители: "
+            task_details = (f"**Задача создана:** {title}\n"
+                            f"**Описание:** {description}\n"
+                            f"**Дедлайн:** {deadline}\n"
+                            f"**Проект:** {project_name}\n"
+                            f"**Ответственный:** {responsible_id}\n"
+                            f"**Соисполнители:** "
                             f"{', '.join(map(str, accomplices))}\n"
-                            f"Чеклист: {', '.join(checklist)}"
+                            f"**Чеклист:** {', '.join(checklist)}"
                             )
 
             try:
-                await context.bot.send_message(notification_group_id,
-                                               task_details)
+                await context.bot.send_message(
+                    notification_group_id,
+                    task_details,
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
+
             except Exception as e:
                 logging.error(f"Ошибка при отправке сообщения в группу: {e}")
                 await update.message.reply_text(
@@ -257,9 +262,15 @@ async def notifications_command_handler(update: Update,
 
 async def delay_command_handler(update: Update,
                                 context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
 
-    bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    if chat_type in ["group", "supergroup"]:
+        bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    else:
+        user_id = update.effective_user.id
+        bitrix_url = await get_url(user_id)
+
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "
                                         "Bitrix URL для этой беседы.")
@@ -295,9 +306,16 @@ async def main_command_handler(update: Update,
 
 async def report_command_handler(update: Update,
                                  context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
 
-    bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+
+    if chat_type in ["group", "supergroup"]:
+        bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+    else:
+        user_id = update.effective_user.id
+        bitrix_url = await get_url(user_id)
+
     if not bitrix_url:
         await update.message.reply_text("Нет настроенного "
                                         "Bitrix URL для этой беседы.")
@@ -308,7 +326,6 @@ async def report_command_handler(update: Update,
     start_date = one_week_ago.strftime("%Y-%m-%dT%H:%M:%S+03:00")
     end_date = now.strftime("%Y-%m-%dT%H:%M:%S+03:00")
 
-    # Получаем отчет через синхронную функцию в отдельном потоке
     report_text = await asyncio.to_thread(get_completed_tasks_report,
                                           bitrix_url, start_date, end_date)
 
