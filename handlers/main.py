@@ -12,10 +12,15 @@ from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
 import logging
+
+from tinkoff_service import transcribe_wav_tinkoff
 from utils import (extract_mention_username, get_url_by_type,
                    get_uinfo_from_admins)
 from datetime import datetime, timedelta
 import asyncio
+
+from pydub import AudioSegment
+import os
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -55,10 +60,39 @@ async def text_message_handler(update: Update,
     chat_type = update.effective_chat.type
     if chat_type not in ["group", "supergroup"]:
         return
-    text = update.message.text
+    voice = update.message.voice
+    if voice:
+        voice = update.message.voice
+        file_id = voice.file_id
+        file = context.bot.get_file(file_id)
+        ogg_path = "input.ogg"
+        file.download(ogg_path)
+        wav_path = "output.wav"
+        AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
+        try:
+            recognized_text = transcribe_wav_tinkoff(wav_path)
+            if recognized_text.strip():
+                text = recognized_text.strip()
+                if 'задача' not in text:
+                    return
+            else:
+                await update.message.reply_text(
+                    "Не удалось распознать голосовое сообщение.")
+        except Exception as e:
+            logging.exception("Ошибка распознавания через Tinkoff: %s", e)
+            await update.message.reply_text(
+                "Ошибка при распознавании голосового сообщения.")
+        finally:
+            if os.path.exists(ogg_path):
+                os.remove(ogg_path)
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
+    else:
+        text = update.message.text
+        if '#задача' not in text:
+            return
+
     chat_id = update.effective_chat.id
-    if '#задача' not in text:
-        return
 
     url, notification_group_id = await get_uinfo_from_admins(chat_id, context)
     if not url:
@@ -107,7 +141,7 @@ async def text_message_handler(update: Update,
                 f"Не найден bitrix_id для user {exec_username}, "
                 f"fallback на админа")
         if b_id:
-            bitrix_executors.append(get_user_name_from_bitrix(b_id))
+            bitrix_executors.append(get_user_name_from_bitrix(url, b_id))
 
     if bitrix_executors:
         responsible_id = bitrix_executors[0]
@@ -153,7 +187,7 @@ async def text_message_handler(update: Update,
                 )
             ]
         ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        # reply_markup = InlineKeyboardMarkup(keyboard)
 
         lines = [f"*Задача создана:* {title_escaped}"]
         if description_escaped:
@@ -363,7 +397,7 @@ async def report_command_handler(update: Update,
 
 
 async def tasks_command_handler(update: Update,
-                                 context: ContextTypes.DEFAULT_TYPE):
+                                context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     bitrix_url = await get_url_by_type(chat_id, chat_type, context)
@@ -390,8 +424,8 @@ async def tasks_command_handler(update: Update,
                                     parse_mode=ParseMode.MARKDOWN_V2)
 
 
-
-# async def edit_task_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# async def edit_task_callback(update: Update,
+# context: ContextTypes.DEFAULT_TYPE):
 #     query = update.callback_query
 #     await query.answer()
 #
@@ -402,7 +436,38 @@ async def tasks_command_handler(update: Update,
 #
 #     # Простейший вариант: сразу отправить форму/сообщение с вопросом
 #     await query.message.reply_text(
-#         text=f"Вы выбрали редактировать задачу {task_id}. Какое поле хотите изменить?",
+#         text=f"Вы выбрали редактировать задачу {task_id}.
+#         Какое поле хотите изменить?",
 #     )
 #     # Дальше - либо новая инлайн-клавиатура, либо переход в режим диалога
 #     # (ожидание ответа пользователя, сохранение в ConversationHandler и т.д.)
+
+
+async def voice_message_handler(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
+    voice = update.message.voice
+    file_id = voice.file_id
+
+    file = context.bot.get_file(file_id)
+    ogg_path = "input.ogg"
+    file.download(ogg_path)
+
+    wav_path = "output.wav"
+    AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
+
+    try:
+        recognized_text = transcribe_wav_tinkoff(wav_path)
+        if recognized_text.strip():
+            await update.message.reply_text(f"Расшифровка: {recognized_text}")
+        else:
+            await update.message.reply_text(
+                "Не удалось распознать голосовое сообщение.")
+    except Exception as e:
+        logging.exception("Ошибка распознавания через Tinkoff: %s", e)
+        await update.message.reply_text(
+            "Ошибка при распознавании голосового сообщения.")
+
+    if os.path.exists(ogg_path):
+        os.remove(ogg_path)
+    if os.path.exists(wav_path):
+        os.remove(wav_path)

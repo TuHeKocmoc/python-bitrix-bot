@@ -17,7 +17,7 @@ from handlers.main import (start_handler, text_message_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
                            main_command_handler, report_command_handler,
-                           tasks_command_handler)
+                           tasks_command_handler, voice_message_handler)
                            # edit_task_callback)
 import logging
 import asyncio
@@ -104,6 +104,8 @@ def main():
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))
+    application.add_handler(MessageHandler(filters.VOICE,
+                                           voice_message_handler))
     # application.add_handler(
     #     CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
 
