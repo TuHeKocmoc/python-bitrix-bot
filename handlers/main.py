@@ -142,7 +142,7 @@ async def text_message_handler(update: Update,
             [
                 InlineKeyboardButton(
                     text="Изменить задачу (WIP ⚒️)",
-                    # callback_data=f"edit_task:{task_id}"
+                    callback_data=f"edit_task:{task_id}"
                 )
             ]
         ]
@@ -169,7 +169,7 @@ async def text_message_handler(update: Update,
                 notification_group_id,
                 task_details,
                 parse_mode=ParseMode.MARKDOWN_V2,
-                reply_markup=reply_markup
+                # reply_markup=reply_markup
             )
 
         except Exception as e:
