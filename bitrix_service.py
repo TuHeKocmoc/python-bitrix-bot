@@ -409,6 +409,7 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
     parts = user_name.strip().split()
 
     if len(parts) == 2:
+        logging.debug(f"Chosen variant 2 for name: {user_name}")
         first_part, second_part = parts[0], parts[1]
         payload = {
             "filter": {
@@ -438,6 +439,7 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
         resp = requests.post(url, json=payload)
         resp.raise_for_status()
         data = resp.json()
+        logging.debug(f"RAW DATA: {data}")
         if "result" in data and isinstance(data["result"], list):
             users_list = data["result"]
             for user_info in users_list:
