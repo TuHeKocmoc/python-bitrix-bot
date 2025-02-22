@@ -447,7 +447,8 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
 
     not_completed = {"<REAL_STATUS": 5}
     completed_this_week = {
-        "=REAL_STATUS": 5,
+        ">=REAL_STATUS": "1",
+        "<=REAL_STATUS": "4",
         ">=CLOSED_DATE": start_of_week_str
     }
 
@@ -458,18 +459,18 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
         not_completed["GROUP_ID"] = group_id
         completed_this_week["GROUP_ID"] = group_id
 
-    filter_data = {
-        "LOGIC": "OR",
-        "0": not_completed,
-        "1": completed_this_week
-    }
     # filter_data = {
     #     "LOGIC": "OR",
-    #     "FILTERS": [
-    #         not_completed,
-    #         completed_this_week
-    #     ]
+    #     "0": not_completed,
+    #     "1": completed_this_week
     # }
+    filter_data = {
+        "LOGIC": "OR",
+        "FILTERS": [
+            not_completed,
+            completed_this_week
+        ]
+    }
 
     request_data = {
         "filter": filter_data,
@@ -532,7 +533,8 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             f"Статус: {real_status}\n"
             f"Дедлайн: {deadline_str}\n"
             f"Дата закрытия: {closed_date_str}\n"
-            f"Ответственный (ID): {responsible_id}\n"
+            f"Ответственный: {get_user_name_from_bitrix(bitrix_url, 
+                                                        responsible_id)}\n"
             f"Проект (GROUP_ID): {group_id}\n"
             "----------------------"
         )
