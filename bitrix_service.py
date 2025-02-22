@@ -548,7 +548,7 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
 def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
     tasks = get_tasks_filtered(bitrix_url, query)
     if not tasks:
-        return "Задач по заданному фильтру нет."
+        return escape_markdown("Задач по заданному фильтру нет.", version=2)
 
     if query is None:
         header = "Задачи (не завершённые или завершённые на этой неделе)"
@@ -603,6 +603,5 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
         )
         report_lines.append(task_text)
 
-        # Оборачиваем заголовок в звёздочки для жирного шрифта
     report_text = f"*{header_escaped}*\n\n" + "\n".join(report_lines)
     return report_text
