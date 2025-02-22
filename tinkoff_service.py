@@ -5,9 +5,6 @@ stt_client = ClientSTT(TINKOFF_API_KEY, TINKOFF_SECRET_KEY)
 
 
 def transcribe_wav_tinkoff(wav_path: str) -> str:
-    with open(wav_path, "rb") as f:
-        audio_content = f.read()
-
     config = {
         "encoding": "LINEAR16",
         "sample_rate_hertz": 16000,
@@ -15,7 +12,7 @@ def transcribe_wav_tinkoff(wav_path: str) -> str:
         "language_code": "ru-RU",
         "enable_automatic_punctuation": True
     }
-    response = stt_client.recognize(audio_content, config=config)
+    response = stt_client.recognize(wav_path, config=config)
     text_segments = []
     for result in response.results:
         for alt in result.alternatives:
