@@ -7,7 +7,8 @@ from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
                             get_overdue_tasks_report, get_my_projects,
                             get_completed_tasks_report,
-                            get_user_name_from_bitrix)
+                            get_user_name_from_bitrix,
+                            get_tasks_filtered_report)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
 import logging
@@ -359,6 +360,34 @@ async def report_command_handler(update: Update,
                                           bitrix_url, start_date, end_date)
 
     await update.message.reply_text(report_text)
+
+
+async def tasks_command_handler(update: Update,
+                                 context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного "
+                                        "Bitrix URL для этой беседы.")
+        return
+
+    text = update.message.text.strip()
+    parts = text.split(maxsplit=1)
+
+    query = None
+    if len(parts) > 1:
+        possible_filter = parts[1].strip()
+        try:
+            query = int(possible_filter)
+        except ValueError:
+            query = possible_filter
+
+    report_text = get_tasks_filtered_report(bitrix_url, query)
+
+    await update.message.reply_text(report_text)
+
 
 
 # async def edit_task_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):

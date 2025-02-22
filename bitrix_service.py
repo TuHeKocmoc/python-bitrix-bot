@@ -1,7 +1,7 @@
 import logging
 
 import requests
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from utils import format_datetime
 
 
@@ -359,3 +359,184 @@ def get_my_projects(webhook: str) -> list[dict]:
     except Exception as e:
         logging.error("Ошибка при запросе проектов:", e)
         return []
+
+
+def get_user_id_by_name(webhook: str, user_name: str) -> int:
+    url = f"{webhook}user.get.json"
+    payload = {
+        "filter": {
+            "LOGIC": "OR",
+            "NAME": user_name,
+            "LAST_NAME": user_name
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        if "result" in data and isinstance(data["result"], list):
+            users_list = data["result"]
+            for user_info in users_list:
+                user_id_str = user_info.get("ID")
+                if user_id_str is not None:
+                    return int(user_id_str)
+
+        return -1
+
+    except Exception as e:
+        print(f"Bitrix error while searching user by name '{user_name}':", e)
+        return -1
+
+
+def get_project_id_by_name(webhook: str, project_name: str) -> int:
+    url = f"{webhook}sonet_group.get.json"
+
+    payload = {
+        "FILTER": {
+            "LOGIC": "OR",
+            "TITLE": project_name,
+            "NAME": project_name
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if "result" in data and isinstance(data["result"], list):
+            groups_list = data["result"]
+            for group_info in groups_list:
+                group_id_str = group_info.get("ID")
+                if group_id_str is not None:
+                    return int(group_id_str)
+
+        return -1
+
+    except Exception as e:
+        print(f"Bitrix error while searching project by name '{project_name}':", e)
+        return -1
+
+
+def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
+    today = date.today()
+    weekday = today.weekday()
+    monday = today - timedelta(days=weekday)
+    start_of_week = datetime(monday.year, monday.month, monday.day, 0, 0, 0)
+    start_of_week_str = start_of_week.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+
+    user_id = None
+    group_id = None
+
+    if query is not None:
+        if isinstance(query, int):
+            user_id = query
+        elif isinstance(query, str):
+            found_user_id = get_user_id_by_name(webhook, query)
+            if found_user_id != -1:
+                user_id = found_user_id
+            else:
+                found_group_id = get_project_id_by_name(webhook, query)
+                if found_group_id != -1:
+                    group_id = found_group_id
+                else:
+                    print(
+                        f"Не удалось интерпретировать '{query}' как имя пользователя или проекта.")
+                    return []
+
+    not_completed = {"<REAL_STATUS": 5}
+    completed_this_week = {
+        "=REAL_STATUS": 5,
+        ">=CLOSED_DATE": start_of_week_str
+    }
+
+    if user_id:
+        not_completed["RESPONSIBLE_ID"] = user_id
+        completed_this_week["RESPONSIBLE_ID"] = user_id
+    if group_id:
+        not_completed["GROUP_ID"] = group_id
+        completed_this_week["GROUP_ID"] = group_id
+
+    filter_data = {
+        "LOGIC": "OR",
+        "0": not_completed,
+        "1": completed_this_week
+    }
+    # filter_data = {
+    #     "LOGIC": "OR",
+    #     "FILTERS": [
+    #         not_completed,
+    #         completed_this_week
+    #     ]
+    # }
+
+    request_data = {
+        "filter": filter_data,
+        "select": [
+            "ID", "TITLE", "DEADLINE", "RESPONSIBLE_ID", "REAL_STATUS",
+            "CLOSED_DATE", "GROUP_ID"
+        ]
+    }
+
+    url = f"{webhook}tasks.task.list.json"
+    try:
+        resp = requests.post(url, json=request_data)
+        resp_data = resp.json()
+        print("STATUS CODE:", resp.status_code)
+        print("RESPONSE:", resp.text)
+
+        if "result" in resp_data:
+            result = resp_data["result"]
+            if isinstance(result, list):
+                tasks = result
+            elif isinstance(result, dict) and "tasks" in result:
+                tasks = result["tasks"]
+            else:
+                tasks = []
+            return tasks
+        else:
+            print("Ошибка получения задач:",
+                  resp_data.get("error_description"))
+            return []
+    except Exception as e:
+        print("Error fetching tasks:", e)
+        return []
+
+def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
+    tasks = get_tasks_filtered(bitrix_url, query)
+    if not tasks:
+        return "Задач по заданному фильтру нет."
+
+    if query is None:
+        header = "Задачи (не завершённые или завершённые на этой неделе)"
+    else:
+        header = f"Задачи по запросу: {query}"
+
+    report_lines = []
+    for task in tasks:
+        task_id = task.get("id") or task.get("ID")
+        title = task.get("title") or task.get("TITLE") or "Без названия"
+        deadline = task.get("deadline") or task.get("DEADLINE")
+        real_status = task.get("realStatus") or task.get("REAL_STATUS")
+        closed_date = task.get("closedDate") or task.get("CLOSED_DATE")
+        responsible_id = task.get("responsibleId") or task.get("RESPONSIBLE_ID")
+        group_id = task.get("groupId") or task.get("GROUP_ID")
+
+        deadline_str = format_datetime(deadline) if deadline else "—"
+        closed_date_str = format_datetime(closed_date) if closed_date else "—"
+
+        task_text = (
+            f"ID: {task_id}\n"
+            f"Задача: {title}\n"
+            f"Статус: {real_status}\n"
+            f"Дедлайн: {deadline_str}\n"
+            f"Дата закрытия: {closed_date_str}\n"
+            f"Ответственный (ID): {responsible_id}\n"
+            f"Проект (GROUP_ID): {group_id}\n"
+            "----------------------"
+        )
+        report_lines.append(task_text)
+
+    report_text = f"**{header}**\n\n" + "\n".join(report_lines)
+    return report_text

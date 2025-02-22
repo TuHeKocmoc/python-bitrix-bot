@@ -16,7 +16,8 @@ from handlers.main import (start_handler, text_message_handler,
                            info_command_handler, url_command_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
-                           main_command_handler, report_command_handler)
+                           main_command_handler, report_command_handler,
+                           tasks_command_handler)
                            # edit_task_callback)
 import logging
 import asyncio
@@ -99,6 +100,7 @@ def main():
                                            delay_command_handler))
     application.add_handler(CommandHandler("main", main_command_handler))
     application.add_handler(CommandHandler("report", report_command_handler))
+    application.add_handler(CommandHandler("tasks", tasks_command_handler))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))
