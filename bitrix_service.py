@@ -368,7 +368,7 @@ def get_my_projects(webhook: str) -> list[dict]:
         return []
 
 
-def get_project_name_by_id(webhook: str, project_id: int) -> str | None:
+def get_project_name_by_id(webhook: str, project_id: int) -> str:
     url = f"{webhook}sonet_group.get.json"
 
     payload = {
@@ -393,14 +393,14 @@ def get_project_name_by_id(webhook: str, project_id: int) -> str | None:
                 if project_name:
                     return project_name
 
-        return None
+        return '-1'
 
     except Exception as e:
         logging.error(
             f"Bitrix error while searching project name by ID {project_id}: "
             f"{e}"
         )
-        return None
+        return '-1'
 
 
 def get_user_id_by_name(webhook: str, user_name: str) -> int:
