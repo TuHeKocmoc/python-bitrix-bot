@@ -6,7 +6,8 @@ from telegram.helpers import escape_markdown
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
                             get_overdue_tasks_report, get_my_projects,
-                            get_completed_tasks_report)
+                            get_completed_tasks_report,
+                            get_user_name_from_bitrix)
 from db import (add_user, set_url, get_url, get_user, set_user_bitrix_id,
                 get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id)
 import logging
@@ -105,7 +106,7 @@ async def text_message_handler(update: Update,
                 f"Не найден bitrix_id для user {exec_username}, "
                 f"fallback на админа")
         if b_id:
-            bitrix_executors.append(b_id)
+            bitrix_executors.append(get_user_name_from_bitrix(b_id))
 
     responsible_id = bitrix_executors[0] \
         if bitrix_executors else get_user_id_from_webhook(url)

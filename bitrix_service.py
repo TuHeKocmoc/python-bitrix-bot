@@ -162,6 +162,48 @@ def get_user_id_from_webhook(webhook: str):
         return None
 
 
+def get_user_name_from_bitrix(webhook: str, user_id: int):
+    url = f"{webhook}user.get.json"
+
+    # Запросим пользователя по ID (через фильтр)
+    payload = {
+        "filter": {
+            "ID": user_id
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        # {
+        #   "result": [
+        #     {
+        #       "ID": "123",
+        #       "NAME": "Иван",
+        #       "LAST_NAME": "Иванов",
+        #       "SECOND_NAME": "",
+        #       ...
+        #     }
+        #   ]
+        # }
+        if "result" in data and isinstance(data["result"], list):
+            users_list = data["result"]
+            if len(users_list) > 0:
+                user_info = users_list[0]
+                first_name = user_info.get("NAME", "")
+                last_name = user_info.get("LAST_NAME", "")
+                full_name = f"{first_name} {last_name}".strip()
+                return full_name or None
+
+        print("Bitrix error:", data.get("error"), data.get("error_description"))
+        return None
+
+    except Exception as e:
+        print("Bitrix error:", e)
+        return None
+
+
 def add_checklist_to_task(webhook, task_id, checklist):
     url = f"{webhook}tasks.task.update.json"
 
