@@ -17,8 +17,7 @@ from handlers.main import (start_handler, text_message_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
                            main_command_handler, report_command_handler,
-                           tasks_command_handler, voice_message_handler)
-                           # edit_task_callback)
+                           tasks_command_handler)  # edit_task_callback)
 import logging
 import asyncio
 from apscheduler import Scheduler
