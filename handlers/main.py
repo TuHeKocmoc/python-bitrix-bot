@@ -108,8 +108,13 @@ async def text_message_handler(update: Update,
         if b_id:
             bitrix_executors.append(get_user_name_from_bitrix(b_id))
 
-    responsible_id = bitrix_executors[0] \
-        if bitrix_executors else get_user_id_from_webhook(url)
+    if bitrix_executors:
+        responsible_id = bitrix_executors[0]
+    else:
+        responsible_id = get_user_name_from_bitrix(
+            get_user_id_from_webhook(url)
+        )
+
     accomplices = bitrix_executors[1:] if len(bitrix_executors) > 1 else []
     if not url:
         await update.message.reply_text("Не задан URL")
