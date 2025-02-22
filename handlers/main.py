@@ -133,15 +133,21 @@ async def text_message_handler(update: Update,
             checklist_escaped = [escape_markdown(item, version=2) for item in
                                  checklist]
 
-            task_details = (
-                f"**Задача создана:** {title_escaped}\n"
-                f"**Описание:** {description_escaped}\n"
-                f"**Дедлайн:** {deadline_escaped}\n"
-                f"**Проект:** {project_name_escaped}\n"
-                f"**Ответственный:** {responsible_id_escaped}\n"
-                f"**Соисполнители:** {', '.join(accomplices_escaped)}\n"
-                f"**Чеклист:** {', '.join(checklist_escaped)}"
-            )
+            lines = [f"*Задача создана:* {title_escaped}"]
+            if description_escaped:
+                lines.append(f"*Описание:* {description_escaped}")
+            if deadline_escaped:
+                lines.append(f"*Дедлайн:* {deadline_escaped}")
+            if project_name_escaped:
+                lines.append(f"*Проект:* {project_name_escaped}")
+            if responsible_id_escaped:
+                lines.append(f"*Ответственный:* {responsible_id_escaped}")
+            if accomplices_escaped:
+                lines.append(
+                    f"*Соисполнители:* {', '.join(accomplices_escaped)}")
+            if checklist_escaped:
+                lines.append(f"*Чеклист:* {', '.join(checklist_escaped)}")
+            task_details = "\n".join(lines)
 
             try:
                 await context.bot.send_message(
