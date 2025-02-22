@@ -544,5 +544,5 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
         )
         report_lines.append(task_text)
 
-    report_text = f"**{header}**\n\n" + "\n".join(report_lines)
+    report_text = f"*{header}*\n\n" + "\n".join(report_lines)
     return report_text

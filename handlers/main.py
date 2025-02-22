@@ -386,7 +386,7 @@ async def tasks_command_handler(update: Update,
 
     report_text = get_tasks_filtered_report(bitrix_url, query)
 
-    await update.message.reply_text(report_text)
+    await update.message.reply_text(report_text, parse_mode="MarkdownV2")
 
 
 
