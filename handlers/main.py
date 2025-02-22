@@ -67,9 +67,9 @@ async def text_message_handler(update: Update,
     if voice:
         voice = update.message.voice
         file = await context.bot.get_file(voice.file_id)
-        ogg_path = "input.ogg"
-        file.download(ogg_path)
-        wav_path = "output.wav"
+        ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
+        await file.download_to_drive(ogg_path)
+        wav_path = f"temp_{uuid.uuid4().hex}.wav"
         AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
         try:
             recognized_text = transcribe_wav_tinkoff(wav_path)
@@ -443,33 +443,3 @@ async def tasks_command_handler(update: Update,
 #     )
 #     # Дальше - либо новая инлайн-клавиатура, либо переход в режим диалога
 #     # (ожидание ответа пользователя, сохранение в ConversationHandler и т.д.)
-
-
-async def voice_message_handler(update: Update,
-                                context: ContextTypes.DEFAULT_TYPE):
-    voice = update.message.voice
-    file_id = voice.file_id
-
-    file = context.bot.get_file(file_id)
-    ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
-    file.download(ogg_path)
-
-    wav_path = f"temp_{uuid.uuid4().hex}.wav"
-    AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
-
-    try:
-        recognized_text = transcribe_wav_tinkoff(wav_path)
-        if recognized_text.strip():
-            await update.message.reply_text(f"Расшифровка: {recognized_text}")
-        else:
-            await update.message.reply_text(
-                "Не удалось распознать голосовое сообщение.")
-    except Exception as e:
-        logging.exception("Ошибка распознавания через Tinkoff: %s", e)
-        await update.message.reply_text(
-            "Ошибка при распознавании голосового сообщения.")
-
-    if os.path.exists(ogg_path):
-        os.remove(ogg_path)
-    if os.path.exists(wav_path):
-        os.remove(wav_path)
