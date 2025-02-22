@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import requests
 from datetime import datetime, date, timedelta
@@ -369,7 +368,7 @@ def get_my_projects(webhook: str) -> list[dict]:
         return []
 
 
-def get_project_name_by_id(webhook: str, project_id: int) -> Any | None:
+def get_project_name_by_id(webhook: str, project_id: int) -> str | None:
     url = f"{webhook}sonet_group.get.json"
 
     payload = {
