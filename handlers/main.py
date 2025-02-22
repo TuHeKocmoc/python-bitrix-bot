@@ -1,6 +1,7 @@
 from telegram import Update, User
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (create_task_in_bitrix, get_user_id_from_webhook,
@@ -121,15 +122,26 @@ async def text_message_handler(update: Update,
                 f"Задача поставлена!"
             )
         if notification_group_id:
-            task_details = (f"**Задача создана:** {title}\n"
-                            f"**Описание:** {description}\n"
-                            f"**Дедлайн:** {deadline}\n"
-                            f"**Проект:** {project_name}\n"
-                            f"**Ответственный:** {responsible_id}\n"
-                            f"**Соисполнители:** "
-                            f"{', '.join(map(str, accomplices))}\n"
-                            f"**Чеклист:** {', '.join(checklist)}"
-                            )
+            title_escaped = escape_markdown(title, version=2)
+            description_escaped = escape_markdown(description, version=2)
+            deadline_escaped = escape_markdown(deadline, version=2)
+            project_name_escaped = escape_markdown(project_name, version=2)
+            responsible_id_escaped = escape_markdown(str(responsible_id),
+                                                     version=2)
+            accomplices_escaped = [escape_markdown(str(a), version=2) for a in
+                                   accomplices]
+            checklist_escaped = [escape_markdown(item, version=2) for item in
+                                 checklist]
+
+            task_details = (
+                f"**Задача создана:** {title_escaped}\n"
+                f"**Описание:** {description_escaped}\n"
+                f"**Дедлайн:** {deadline_escaped}\n"
+                f"**Проект:** {project_name_escaped}\n"
+                f"**Ответственный:** {responsible_id_escaped}\n"
+                f"**Соисполнители:** {', '.join(accomplices_escaped)}\n"
+                f"**Чеклист:** {', '.join(checklist_escaped)}"
+            )
 
             try:
                 await context.bot.send_message(
