@@ -46,7 +46,7 @@ def get_url(user_id: int):
     row = cursor.fetchone()
     cursor.close()
     conn.close()
-    return row
+    return row[0]
 
 
 def add_user(user_id: int, username: str):
