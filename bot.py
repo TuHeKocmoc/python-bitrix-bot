@@ -102,8 +102,8 @@ def main():
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,
                                            text_message_handler))
-    application.add_handler(
-        CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
+    # application.add_handler(
+    #     CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
 
     init_db()
 
