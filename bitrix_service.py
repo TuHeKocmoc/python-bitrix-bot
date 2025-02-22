@@ -2,6 +2,9 @@ import logging
 
 import requests
 from datetime import datetime, date, timedelta
+
+from telegram.helpers import escape_markdown
+
 from utils import format_datetime
 
 
@@ -517,32 +520,51 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
     else:
         header = f"Задачи по запросу: {query}"
 
+    header_escaped = escape_markdown(header, version=2)
+
     report_lines = []
     for task in tasks:
+        # Получаем поля (в любом регистре).
         task_id = task.get("id") or task.get("ID")
         title = task.get("title") or task.get("TITLE") or "Без названия"
-        deadline = task.get("deadline") or task.get("DEADLINE")
         real_status = task.get("realStatus") or task.get("REAL_STATUS")
+        deadline = task.get("deadline") or task.get("DEADLINE")
         closed_date = task.get("closedDate") or task.get("CLOSED_DATE")
-        responsible_id = (task.get("responsibleId") or
-                          task.get("RESPONSIBLE_ID"))
+        responsible_id = task.get("responsibleId") or task.get(
+            "RESPONSIBLE_ID")
         group_id = task.get("groupId") or task.get("GROUP_ID")
 
+        # Экранируем каждую переменную отдельно
+        task_id_esc = escape_markdown(str(task_id),
+                                      version=2) if task_id else "—"
+        title_esc = escape_markdown(title, version=2)
+        real_status_esc = escape_markdown(str(real_status),
+                                          version=2) if real_status else "—"
         deadline_str = format_datetime(deadline) if deadline else "—"
+        deadline_esc = escape_markdown(deadline_str, version=2)
         closed_date_str = format_datetime(closed_date) if closed_date else "—"
+        closed_date_esc = escape_markdown(closed_date_str, version=2)
+
+        responsible_name = get_user_name_from_bitrix(bitrix_url,
+                                                     responsible_id)
+        responsible_name_esc = escape_markdown(str(responsible_name),
+                                               version=2) if responsible_name else "—"
+
+        group_id_esc = escape_markdown(str(group_id),
+                                       version=2) if group_id else "—"
 
         task_text = (
-            f"ID: {task_id}\n"
-            f"Задача: {title}\n"
-            f"Статус: {real_status}\n"
-            f"Дедлайн: {deadline_str}\n"
-            f"Дата закрытия: {closed_date_str}\n"
-            f"Ответственный: "
-            f"{get_user_name_from_bitrix(bitrix_url, responsible_id)}\n"
-            f"Проект (GROUP_ID): {group_id}\n"
-            "----------------------"
+            f"ID: {task_id_esc}\n"
+            f"Задача: {title_esc}\n"
+            f"Статус: {real_status_esc}\n"
+            f"Дедлайн: {deadline_esc}\n"
+            f"Дата закрытия: {closed_date_esc}\n"
+            f"Ответственный: {responsible_name_esc}\n"
+            f"Проект (GROUP_ID): {group_id_esc}\n"
+            f"{escape_markdown('----------------------', version=2)}"
         )
         report_lines.append(task_text)
 
-    report_text = f"*{header}*\n\n" + "\n".join(report_lines)
+        # Оборачиваем заголовок в звёздочки для жирного шрифта
+    report_text = f"*{header_escaped}*\n\n" + "\n".join(report_lines)
     return report_text
