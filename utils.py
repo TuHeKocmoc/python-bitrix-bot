@@ -16,10 +16,10 @@ async def get_url_by_type(chat_id: int, chat_type: str,
                           context: ContextTypes.DEFAULT_TYPE):
     if chat_type == "private":
         user_row = get_url(chat_id)
-        if user_row:
-            return user_row
+        return user_row
     elif chat_type == "group" or chat_type == "supergroup":
-        return await get_uinfo_from_admins(chat_id, context)[0]
+        bitrix_url, group_id = await get_uinfo_from_admins(chat_id, context)
+        return bitrix_url
     return None
 
 

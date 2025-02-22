@@ -1,4 +1,4 @@
-from telegram import Update, User
+from telegram import Update, User, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
@@ -121,6 +121,10 @@ async def text_message_handler(update: Update,
         await update.message.reply_text(
             f"Задача поставлена!"
         )
+        task_id = result['result']['task']['id']
+    else:
+        task_id = 0
+
     if notification_group_id:
         title_escaped = escape_markdown(title, version=2)
         description_escaped = escape_markdown(description, version=2)
@@ -132,6 +136,16 @@ async def text_message_handler(update: Update,
                                accomplices]
         checklist_escaped = [escape_markdown(item, version=2) for item in
                              checklist]
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    text="Изменить задачу (WIP ⚒️)",
+                    # callback_data=f"edit_task:{task_id}"
+                )
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
         lines = [f"*Задача создана:* {title_escaped}"]
         if description_escaped:
@@ -153,7 +167,8 @@ async def text_message_handler(update: Update,
             await context.bot.send_message(
                 notification_group_id,
                 task_details,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
             )
 
         except Exception as e:
@@ -337,3 +352,20 @@ async def report_command_handler(update: Update,
                                           bitrix_url, start_date, end_date)
 
     await update.message.reply_text(report_text)
+
+
+# async def edit_task_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     query = update.callback_query
+#     await query.answer()
+#
+#     data = query.data  # например, "edit_task:123"
+#     command, task_id_str = data.split(":", 1)
+#     task_id = int(task_id_str)
+#
+#
+#     # Простейший вариант: сразу отправить форму/сообщение с вопросом
+#     await query.message.reply_text(
+#         text=f"Вы выбрали редактировать задачу {task_id}. Какое поле хотите изменить?",
+#     )
+#     # Дальше - либо новая инлайн-клавиатура, либо переход в режим диалога
+#     # (ожидание ответа пользователя, сохранение в ConversationHandler и т.д.)
