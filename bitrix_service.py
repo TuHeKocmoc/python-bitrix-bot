@@ -408,32 +408,31 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
 
     parts = user_name.strip().split()
 
+    filters_list = [{"NAME": user_name}, {"LAST_NAME": user_name}]
+
     if len(parts) == 2:
-        logging.debug(f"Chosen variant 2 for name: {user_name}")
         first_part, second_part = parts[0], parts[1]
-        payload = {
-            "filter": {
-                "LOGIC": "OR",
-                "NAME": user_name,
-                "LAST_NAME": user_name,
-                "0": {
-                    "NAME": first_part,
-                    "LAST_NAME": second_part
-                },
-                "1": {
-                    "NAME": second_part,
-                    "LAST_NAME": first_part
-                }
-            }
-        }
-    else:
-        payload = {
-            "filter": {
-                "LOGIC": "OR",
-                "NAME": user_name,
-                "LAST_NAME": user_name
-            }
-        }
+        filters_list.append({"NAME": user_name})
+        filters_list.append({"LAST_NAME": user_name})
+
+        filters_list.append({
+            "NAME": first_part,
+            "LAST_NAME": second_part
+        })
+
+        filters_list.append({
+            "NAME": second_part,
+            "LAST_NAME": first_part
+        })
+
+    filter_data = {
+        "LOGIC": "OR",
+        "FILTERS": filters_list
+    }
+
+    payload = {
+        "filter": filter_data
+    }
 
     try:
         resp = requests.post(url, json=payload)
