@@ -468,16 +468,11 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
 
     filter_data = {
         "LOGIC": "OR",
-        "0": not_completed,
-        "1": completed_this_week
+        "FILTERS": [
+            not_completed,
+            completed_this_week
+        ]
     }
-    # filter_data = {
-    #     "LOGIC": "OR",
-    #     "FILTERS": [
-    #         not_completed,
-    #         completed_this_week
-    #     ]
-    # }
 
     request_data = {
         "filter": filter_data,
