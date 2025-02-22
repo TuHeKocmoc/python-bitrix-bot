@@ -23,9 +23,6 @@ from pydub import AudioSegment
 import os
 import uuid
 
-AudioSegment.converter = "/usr/local/bin/ffmpeg"
-AudioSegment.ffprobe = "/usr/local/bin/ffprobe"
-
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("start_handler called")
@@ -71,6 +68,8 @@ async def text_message_handler(update: Update,
         ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
         await file.download_to_drive(ogg_path)
         wav_path = f"temp_{uuid.uuid4().hex}.wav"
+        AudioSegment.converter = "/usr/local/bin/ffmpeg"
+        AudioSegment.ffprobe = "/usr/local/bin/ffprobe"
         AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
         try:
             recognized_text = transcribe_wav_tinkoff(wav_path)
