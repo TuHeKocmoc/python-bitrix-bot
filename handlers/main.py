@@ -24,6 +24,7 @@ import os
 import uuid
 
 AudioSegment.converter = "/usr/local/bin/ffmpeg"
+AudioSegment.ffprobe = "/usr/local/bin/ffprobe"
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
