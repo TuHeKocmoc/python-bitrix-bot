@@ -75,7 +75,7 @@ async def text_message_handler(update: Update,
             recognized_text = transcribe_wav_tinkoff(wav_path)
             logging.debug(f"Распознанный текст: {recognized_text}")
             if recognized_text.strip():
-                text = recognized_text.strip()
+                text = recognized_text.strip().lower()
                 if 'задача' not in text:
                     return
             else:
@@ -87,11 +87,11 @@ async def text_message_handler(update: Update,
             await update.message.reply_text(
                 "Ошибка при распознавании голосового сообщения.")
             return
-        # finally:
-        #     if os.path.exists(ogg_path):
-        #         os.remove(ogg_path)
-        #     if os.path.exists(wav_path):
-        #         os.remove(wav_path)
+        finally:
+            if os.path.exists(ogg_path):
+                os.remove(ogg_path)
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
     else:
         text = update.message.text
         if '#задача' not in text:
