@@ -422,8 +422,11 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
             for user_info in users_list:
                 user_id_str = user_info.get("ID")
                 if user_id_str is not None:
+                    logging.debug("User ID:", user_id_str)
                     return int(user_id_str)
 
+        logging.error(f"Bitrix error while searching user "
+                      f"by name '{user_name}'")
         return -1
 
     except Exception as e:
