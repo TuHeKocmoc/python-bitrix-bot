@@ -112,6 +112,7 @@ async def text_message_handler(update: Update,
         responsible_id = bitrix_executors[0]
     else:
         responsible_id = get_user_name_from_bitrix(
+            url,
             get_user_id_from_webhook(url)
         )
 
