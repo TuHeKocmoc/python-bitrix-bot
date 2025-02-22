@@ -21,6 +21,7 @@ import asyncio
 
 from pydub import AudioSegment
 import os
+import uuid
 
 AudioSegment.converter = "/usr/local/bin/ffmpeg"
 
@@ -451,10 +452,10 @@ async def voice_message_handler(update: Update,
     file_id = voice.file_id
 
     file = context.bot.get_file(file_id)
-    ogg_path = "input.ogg"
+    ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
     file.download(ogg_path)
 
-    wav_path = "output.wav"
+    wav_path = f"temp_{uuid.uuid4().hex}.wav"
     AudioSegment.from_ogg(ogg_path).export(wav_path, format="wav")
 
     try:
