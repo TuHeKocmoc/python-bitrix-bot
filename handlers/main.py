@@ -15,7 +15,7 @@ import asyncio
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("start_handler called")
+    logging.debug("start_handler called")
     telegram_user: User = update.effective_user
     telegram_id = telegram_user.id
     username = (telegram_user.username or telegram_user.first_name or

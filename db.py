@@ -1,3 +1,5 @@
+import logging
+
 import mysql.connector
 from mysql.connector import Error
 from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
@@ -33,9 +35,9 @@ def init_db():
         conn.commit()
         cursor.close()
         conn.close()
-        print("Инициализация базы данных завершена.")
+        logging.debug("Инициализация базы данных завершена.")
     except Error as e:
-        print("Ошибка при инициализации БД:", e)
+        logging.error("Ошибка при инициализации БД:", e)
 
 
 def get_url(user_id: int):

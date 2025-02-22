@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from datetime import datetime
 from utils import format_datetime
@@ -25,10 +27,10 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
         resp = requests.post(url, json=data)
         resp_data = resp.json()
         task_id = resp_data['result']['task']['id']
-        print("STATUS CODE:", resp.status_code)
-        print("RESPONSE:", resp.text)
+        logging.debug("STATUS CODE:", resp.status_code)
+        logging.debug("RESPONSE:", resp.text)
     except Exception as e:
-        print("Bitrix error:", e)
+        logging.error("Bitrix error:", e)
         return None
 
     if checklist:
@@ -47,7 +49,7 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
                                                json=checklist_data)
                 checklist_resp_data = checklist_resp.json()
                 if checklist_resp_data.get('result'):
-                    print(f"Пункт чеклиста '{item}' добавлен.")
+                    logging.debug(f"Пункт чеклиста '{item}' добавлен.")
                 else:
                     print(f"Ошибка при добавлении пункта чеклиста '{item}':"
                           f" {checklist_resp_data.get('error_description')}")
@@ -237,9 +239,9 @@ def get_my_projects(webhook: str) -> list[dict]:
         if "result" in resp_data:
             return resp_data["result"]
         else:
-            print("Ошибка получения проектов:",
-                  resp_data.get("error_description"))
+            logging.error("Ошибка получения проектов:",
+                          resp_data.get("error_description"))
             return []
     except Exception as e:
-        print("Ошибка при запросе проектов:", e)
+        logging.error("Ошибка при запросе проектов:", e)
         return []

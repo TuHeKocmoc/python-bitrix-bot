@@ -1,3 +1,5 @@
+import logging
+
 from openai import OpenAI
 import json
 from config import OPENAI_API_KEY
@@ -70,9 +72,9 @@ def parse_message_with_openai(message_text: str,
                                                   ])
 
         content = response.choices[0].message.content
-        print("RAW CONTENT:", repr(content))
+        logging.debug("RAW CONTENT:", repr(content))
         data = json.loads(content)
         return data
     except Exception as e:
-        print("OpenAI error:", e)
+        logging.error("OpenAI error:", e)
         return {"is_task": False}
