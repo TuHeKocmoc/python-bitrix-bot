@@ -78,6 +78,7 @@ async def text_message_handler(update: Update,
             else:
                 await update.message.reply_text(
                     "Не удалось распознать голосовое сообщение.")
+                return
         except Exception as e:
             logging.exception("Ошибка распознавания через Tinkoff: %s", e)
             await update.message.reply_text(
