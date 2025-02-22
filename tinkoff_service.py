@@ -14,7 +14,7 @@ def transcribe_wav_tinkoff(wav_path: str) -> str:
     }
     response = stt_client.recognize(wav_path, config=config)
     text_segments = []
-    for result in response.results:
-        for alt in result.alternatives:
-            text_segments.append(alt.transcript)
+    for result in response["results"]:
+        for alt in result["alternatives"]:
+            text_segments.append(alt["transcript"])
     return " ".join(text_segments)
