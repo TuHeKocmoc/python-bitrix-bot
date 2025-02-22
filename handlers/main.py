@@ -23,9 +23,6 @@ from pydub import AudioSegment
 import os
 import uuid
 
-AudioSegment.converter = "/usr/local/bin/ffmpeg"
-AudioSegment.ffprobe = "/usr/local/bin/ffprobe"
-
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("start_handler called")
@@ -66,8 +63,6 @@ async def text_message_handler(update: Update,
         return
     voice = update.message.voice
     if voice:
-        logging.debug(f"DEBUG: converter = {AudioSegment.converter}")
-        logging.debug(f"DEBUG: ffprobe = {AudioSegment.ffprobe}")
         voice = update.message.voice
         file = await context.bot.get_file(voice.file_id)
         ogg_path = f"temp_{uuid.uuid4().hex}.ogg"

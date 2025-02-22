@@ -10,10 +10,10 @@ def transcribe_wav_tinkoff(wav_path: str) -> str:
 
     config = {
         "encoding": "LINEAR16",
-        "sampleRateHertz": 16000,
-        "numChannels": 1,
-        "languageCode": "ru-RU",
-        "enableAutomaticPunctuation": True
+        "sample_rate_hertz": 16000,
+        "num_channels": 1,
+        "language_code": "ru-RU",
+        "enable_automatic_punctuation": True
     }
     response = stt_client.recognize(audio_content, config=config)
     text_segments = []
