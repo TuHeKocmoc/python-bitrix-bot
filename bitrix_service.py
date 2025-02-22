@@ -425,8 +425,8 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
                     logging.debug("User ID:", user_id_str)
                     return int(user_id_str)
 
-        logging.error(f"Bitrix error while searching user "
-                      f"by name '{user_name}'")
+        logging.error(f"Bitrix error while "
+                      f"searching user by name '{user_name}'")
         return -1
 
     except Exception as e:
