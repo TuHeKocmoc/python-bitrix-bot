@@ -82,6 +82,7 @@ async def text_message_handler(update: Update,
             logging.exception("Ошибка распознавания через Tinkoff: %s", e)
             await update.message.reply_text(
                 "Ошибка при распознавании голосового сообщения.")
+            return
         finally:
             if os.path.exists(ogg_path):
                 os.remove(ogg_path)
