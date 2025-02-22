@@ -590,6 +590,7 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             get_project_name_by_id(bitrix_url, group_id),
             version=2) if group_id else "—"
 
+        separator = escape_markdown("----------------------", version=2)
         task_text = (
             f"ID: {task_id_esc}\n"
             f"Задача: {title_esc}\n"
@@ -598,7 +599,7 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             f"Дата закрытия: {closed_date_esc}\n"
             f"Ответственный: {responsible_name_esc}\n"
             f"Проект: {group_id_esc}\n"
-            f"----------------------"
+            f"{separator}"
         )
         report_lines.append(task_text)
 
