@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import requests
 from datetime import datetime, date, timedelta
@@ -368,6 +369,41 @@ def get_my_projects(webhook: str) -> list[dict]:
         return []
 
 
+def get_project_name_by_id(webhook: str, project_id: int) -> Any | None:
+    url = f"{webhook}sonet_group.get.json"
+
+    payload = {
+        "FILTER": {
+            "ID": project_id
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if "result" in data and isinstance(data["result"], list):
+            groups_list = data["result"]
+            if len(groups_list) > 0:
+                group_info = groups_list[0]
+                project_title = group_info.get("TITLE")
+                if project_title:
+                    return project_title
+                project_name = group_info.get("NAME")
+                if project_name:
+                    return project_name
+
+        return None
+
+    except Exception as e:
+        logging.error(
+            f"Bitrix error while searching project name by ID {project_id}: "
+            f"{e}"
+        )
+        return None
+
+
 def get_user_id_by_name(webhook: str, user_name: str) -> int:
     url = f"{webhook}user.get.json"
     payload = {
@@ -524,7 +560,6 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
 
     report_lines = []
     for task in tasks:
-        # Получаем поля (в любом регистре).
         task_id = task.get("id") or task.get("ID")
         title = task.get("title") or task.get("TITLE") or "Без названия"
         real_status = task.get("realStatus") or task.get("REAL_STATUS")
@@ -534,7 +569,6 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             "RESPONSIBLE_ID")
         group_id = task.get("groupId") or task.get("GROUP_ID")
 
-        # Экранируем каждую переменную отдельно
         task_id_esc = escape_markdown(str(task_id),
                                       version=2) if task_id else "—"
         title_esc = escape_markdown(title, version=2)
@@ -547,11 +581,15 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
 
         responsible_name = get_user_name_from_bitrix(bitrix_url,
                                                      responsible_id)
-        responsible_name_esc = escape_markdown(str(responsible_name),
-                                               version=2) if responsible_name else "—"
+        if responsible_name:
+            responsible_name_esc = escape_markdown(str(responsible_name),
+                                                   version=2)
+        else:
+            responsible_name_esc = "-"
 
-        group_id_esc = escape_markdown(str(group_id),
-                                       version=2) if group_id else "—"
+        group_id_esc = escape_markdown(
+            get_project_name_by_id(bitrix_url, group_id),
+            version=2) if group_id else "—"
 
         task_text = (
             f"ID: {task_id_esc}\n"
@@ -561,7 +599,7 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
             f"Дата закрытия: {closed_date_esc}\n"
             f"Ответственный: {responsible_name_esc}\n"
             f"Проект: {group_id_esc}\n"
-            f"{escape_markdown('----------------------', version=2)}"
+            f"----------------------"
         )
         report_lines.append(task_text)
 
