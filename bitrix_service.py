@@ -405,13 +405,34 @@ def get_project_name_by_id(webhook: str, project_id: int) -> str:
 
 def get_user_id_by_name(webhook: str, user_name: str) -> int:
     url = f"{webhook}user.get.json"
-    payload = {
-        "filter": {
-            "LOGIC": "OR",
-            "NAME": user_name,
-            "LAST_NAME": user_name
+
+    parts = user_name.strip().split()
+
+    if len(parts) == 2:
+        first_part, second_part = parts[0], parts[1]
+        payload = {
+            "filter": {
+                "LOGIC": "OR",
+                "NAME": user_name,
+                "LAST_NAME": user_name,
+                "0": {
+                    "NAME": first_part,
+                    "LAST_NAME": second_part
+                },
+                "1": {
+                    "NAME": second_part,
+                    "LAST_NAME": first_part
+                }
+            }
         }
-    }
+    else:
+        payload = {
+            "filter": {
+                "LOGIC": "OR",
+                "NAME": user_name,
+                "LAST_NAME": user_name
+            }
+        }
 
     try:
         resp = requests.post(url, json=payload)
