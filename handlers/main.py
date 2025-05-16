@@ -767,6 +767,8 @@ async def edit_checklist_callback(update: Update,
     if check_list:
         for i, item in enumerate(check_list, start=1):
             title = item.get("TITLE", "Без названия")
+            if title == "BXCHECKLIST1":
+                continue
             is_complete = item.get("IS_COMPLETE", "N")
             status_emoji = "✅" if is_complete == "Y" else "⬜"
             text_lines.append(f"{i}. {status_emoji} {title}")
