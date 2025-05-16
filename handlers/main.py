@@ -15,7 +15,8 @@ from bitrix_service import (
     get_my_projects, get_completed_tasks_report, get_user_name_from_bitrix,
     get_tasks_filtered_report, update_task_in_bitrix,
     get_task_fields_from_bitrix, get_project_id_by_name,
-    get_project_name_by_id, add_checklist_item, delete_checklist_item
+    get_project_name_by_id, add_checklist_item, delete_checklist_item,
+    get_checklist_items
 )
 from db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
@@ -759,9 +760,7 @@ async def edit_checklist_callback(update: Update,
             )
         return ConversationHandler.END
 
-    from bitrix_service import get_task_fields_from_bitrix
-    task_data = get_task_fields_from_bitrix(bitrix_url, task_id)
-    check_list = task_data.get("checkList", [])
+    check_list = get_checklist_items(bitrix_url, task_id)
     # [{"ID": "12345", "TITLE": "Пункт", "IS_COMPLETE": "N"}, ...]
 
     text_lines = ["**Текущий чек-лист:**"]
