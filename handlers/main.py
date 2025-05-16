@@ -645,17 +645,12 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="Задача успешно обновлена!"
         )
     else:
-        try:
-            await context.bot.edit_message_text(
-                chat_id=old_chat_id,
-                message_id=old_message_id,
-                text="Ошибка при обновлении задачи."
-            )
-        except BadRequest as e:
-            if "not modified" in str(e):
-                logging.debug("No changes in the message, ignoring.")
-            else:
-                raise
+        await context.bot.edit_message_text(
+            chat_id=old_chat_id,
+            message_id=old_message_id,
+            text="Ошибка при обновлении задачи."
+        )
+        return ConversationHandler.END
 
     task_entry = context.user_data.get("created_tasks", {}).get(task_id)
     logging.debug(f"task_entry={task_entry}, "
