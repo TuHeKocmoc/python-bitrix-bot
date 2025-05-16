@@ -8,6 +8,7 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
+from telegram.error import BadRequest
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (
@@ -633,11 +634,17 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="Задача успешно обновлена!"
         )
     else:
-        await context.bot.edit_message_text(
-            chat_id=old_chat_id,
-            message_id=old_message_id,
-            text="Ошибка при обновлении задачи."
-        )
+        try:
+            await context.bot.edit_message_text(
+                chat_id=old_chat_id,
+                message_id=old_message_id,
+                text="Ошибка при обновлении задачи."
+            )
+        except BadRequest as e:
+            if "not modified" in str(e):
+                logging.debug("No changes in the message, ignoring.")
+            else:
+                raise
 
     task_entry = context.user_data.get("created_tasks", {}).get(task_id)
     logging.debug(f"task_entry={task_entry}, "
