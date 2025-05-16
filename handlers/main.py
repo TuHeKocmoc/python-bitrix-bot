@@ -138,23 +138,38 @@ async def text_message_handler(update: Update,
     elif reply_user:
         executors = [reply_user]
 
+    logging.debug(f"[TASK PARSING] mention_user={mention_user}, "
+                  f"reply_user={reply_user}")
+    logging.debug(f"[TASK PARSING] executors={executors}")
+
     bitrix_executors = []
     for exec_username in executors:
         b_id = get_bitrix_id_for_user(exec_username)
+        logging.debug(
+            f"[TASK PARSING] Checking user '{exec_username}' => "
+            f"bitrix_id={b_id}")
         if not b_id:
             logging.info(
                 f"Не найден bitrix_id для user {exec_username}, "
                 f"fallback на админа")
         if b_id:
-            bitrix_executors.append(get_user_name_from_bitrix(url, b_id))
+            name_in_bitrix = get_user_name_from_bitrix(url, b_id)
+            bitrix_executors.append(name_in_bitrix)
+            logging.debug(
+                f"[TASK PARSING] user '{exec_username}' => name_in_bitrix="
+                f"'{name_in_bitrix}'")
 
     if bitrix_executors:
         responsible_id = bitrix_executors[0]
+        logging.debug(
+            f"[TASK PARSING] Responsible ID (bitrix_executors[0]) = "
+            f"{responsible_id}")
     else:
-        responsible_id = get_user_name_from_bitrix(
-            url,
-            get_user_id_from_webhook(url)
-        )
+        fallback_id = get_user_id_from_webhook(url)
+        responsible_id = get_user_name_from_bitrix(url, fallback_id)
+        logging.debug(
+            f"[TASK PARSING] Fallback admin ID => {fallback_id}, "
+            f"name_in_bitrix='{responsible_id}'")
 
     accomplices = bitrix_executors[1:] if len(bitrix_executors) > 1 else []
     if not url:
