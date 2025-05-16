@@ -664,6 +664,8 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     try:
         resp = requests.post(url, json=payload)
         resp.raise_for_status()
+        logging.debug(
+            f"Bitrix get_task_fields_from_bitrix raw response: {resp.text}")
         data = resp.json()
         if "result" in data and isinstance(data["result"], dict):
             task_data = data["result"].get("task", {})
