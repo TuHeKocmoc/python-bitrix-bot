@@ -656,6 +656,7 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_responsible_id_str = updated_fields.get("responsibleId", "")
             new_accomplices = updated_fields.get("accomplices", [])
             new_group_id = updated_fields.get("groupId", 0)
+            # checklist
 
             try:
                 new_responsible_id = int(new_responsible_id_str)
@@ -687,6 +688,22 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 else:
                     accomplices_names.append(f"ID {ac_id}")
 
+            updated_checklist = get_checklist_items(bitrix_url, task_id)
+            checklist_lines = []
+            filtered_list = [
+                x for x in updated_checklist
+                if x.get("TITLE", "").lower().replace("_",
+                                                      "").strip() != "bxchecklist1"
+            ]
+            if filtered_list:
+                for i, item in enumerate(filtered_list, start=1):
+                    t = item.get("TITLE", "Без названия")
+                    complete = item.get("IS_COMPLETE", "N")
+                    prefix = "✅" if complete == "Y" else "⬜"
+                    checklist_lines.append(f"{i}. {prefix} {t}")
+            else:
+                checklist_lines = []
+
             new_lines = [
                 f"*Задача обновлена:* {escape_markdown(new_title, version=2)}"
             ]
@@ -710,11 +727,24 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 new_lines.append(f"*Соисполнители:* {joined_accomplices}")
             updated_text = "\n".join(new_lines)
 
+            if checklist_lines:
+                escaped_lines = [escape_markdown(x, version=2) for x in
+                                 checklist_lines]
+                checklist_str = "\n".join(escaped_lines)
+                new_lines.append(f"*Чек-лист:*\n{checklist_str}")
+
+            keyboard = [
+                [InlineKeyboardButton("Изменить задачу",
+                                      callback_data=f"edit_task:{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             await context.bot.edit_message_text(
                 chat_id=original_chat_id,
                 message_id=original_msg_id,
                 text=updated_text,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
             )
         else:
             logging.warning(
@@ -768,7 +798,8 @@ async def edit_checklist_callback(update: Update,
     if check_list:
         filtered_check_list = [
             x for x in check_list
-            if x.get("TITLE", "").strip().lower().replace("_", "") != "bxchecklist1"
+            if x.get("TITLE",
+                     "").strip().lower().replace("_", "") != "bxchecklist1"
         ]
 
         for i, item in enumerate(filtered_check_list, start=1):
@@ -840,6 +871,110 @@ async def checklist_add_text(update: Update,
         await update.message.reply_text("Пункт добавлен в чек-лист.")
     else:
         await update.message.reply_text("Ошибка при добавлении пункта.")
+
+    task_entry = context.user_data.get("created_tasks", {}).get(task_id)
+    if task_entry:
+        original_chat_id = task_entry["chat_id"]
+        original_msg_id = task_entry["message_id"]
+
+        updated_fields = get_task_fields_from_bitrix(bitrix_url, task_id)
+
+        if updated_fields:
+            new_title = updated_fields.get("title", "Без названия")
+            new_description = updated_fields.get("description", "")
+            new_deadline_iso = updated_fields.get("deadline", "")
+            new_responsible_id_str = updated_fields.get("responsibleId", "")
+            new_group_id = updated_fields.get("groupId", 0)
+            new_accomplices = updated_fields.get("accomplices", [])
+
+            from datetime import datetime
+            if new_deadline_iso:
+                try:
+                    dt = datetime.fromisoformat(new_deadline_iso)
+                    new_deadline = dt.strftime("%d/%m/%Y %H:%M")
+                except ValueError:
+                    new_deadline = new_deadline_iso
+            else:
+                new_deadline = ""
+
+            try:
+                resp_id = int(new_responsible_id_str)
+            except ValueError:
+                resp_id = 0
+
+            responsible_name = (get_user_name_from_bitrix(bitrix_url, resp_id)
+                                or f"ID {resp_id}")
+
+            project_name = ""
+            if new_group_id:
+                pn = get_project_name_by_id(bitrix_url, new_group_id)
+                if pn != "-1":
+                    project_name = pn
+
+            accomplices_names = []
+            for ac_id in new_accomplices:
+                ac_name = get_user_name_from_bitrix(bitrix_url, ac_id)
+                accomplices_names.append(ac_name or f"ID {ac_id}")
+
+            # ============  Чек-лист  ============
+            updated_checklist = get_checklist_items(bitrix_url, task_id)
+            filtered_list = [
+                x for x in updated_checklist
+                if x.get("TITLE",
+                         "").lower().replace("_", "").strip() != "bxchecklist1"
+            ]
+            checklist_lines = []
+            if filtered_list:
+                for i, item in enumerate(filtered_list, start=1):
+                    t = item.get("TITLE", "Без названия")
+                    complete = item.get("IS_COMPLETE", "N")
+                    prefix = "✅" if complete == "Y" else "⬜"
+                    checklist_lines.append(f"{i}. {prefix} {t}")
+            # ============ end Чек-лист ============
+
+            lines = [
+                f"*Задача обновлена:* {escape_markdown(new_title, version=2)}"
+            ]
+            if new_description:
+                lines.append(
+                    f"*Описание:* "
+                    f"{escape_markdown(new_description, version=2)}")
+            if new_deadline:
+                lines.append(
+                    f"*Дедлайн:* {escape_markdown(new_deadline, version=2)}")
+            if project_name:
+                lines.append(
+                    f"*Проект:* {escape_markdown(project_name, version=2)}")
+            lines.append(
+                f"*Ответственный:* "
+                f"{escape_markdown(responsible_name, version=2)}"
+            )
+            if accomplices_names:
+                joined_accomp = ", ".join(escape_markdown(a, version=2)
+                                          for a in accomplices_names)
+                lines.append(f"*Соисполнители:* {joined_accomp}")
+
+            if checklist_lines:
+                escaped_lines = [escape_markdown(x, version=2) for x in
+                                 checklist_lines]
+                checklist_str = "\n".join(escaped_lines)
+                lines.append(f"*Чек-лист:*\n{checklist_str}")
+            else:
+                lines.append("*Чек-лист:* _(пусто)_")
+
+            updated_text = "\n".join(lines)
+
+            kb = [[InlineKeyboardButton("Изменить задачу",
+                                        callback_data=f"edit_task:{task_id}")]]
+            rm = InlineKeyboardMarkup(kb)
+
+            await context.bot.edit_message_text(
+                chat_id=original_chat_id,
+                message_id=original_msg_id,
+                text=updated_text,
+                parse_mode="MarkdownV2",
+                reply_markup=rm
+            )
 
     return ConversationHandler.END
 
@@ -944,6 +1079,7 @@ async def checklist_del_item_callback(update: Update,
         await query.edit_message_text("Ошибка при удалении пункта.")
 
     return CHECKLIST_MENU
+
 
 edit_task_conv_handler = ConversationHandler(
     entry_points=[
