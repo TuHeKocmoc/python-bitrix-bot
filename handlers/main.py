@@ -953,6 +953,7 @@ async def checklist_add_text(update: Update,
                 f"*Ответственный:* "
                 f"{escape_markdown(responsible_name, version=2)}"
             )
+
             if accomplices_names:
                 joined_accomp = ", ".join(escape_markdown(a, version=2)
                                           for a in accomplices_names)
@@ -962,9 +963,7 @@ async def checklist_add_text(update: Update,
                 escaped_lines = [escape_markdown(x, version=2) for x in
                                  checklist_lines]
                 checklist_str = "\n".join(escaped_lines)
-                lines.append(f"*Чек-лист:*\n{checklist_str}")
-            else:
-                lines.append("*Чек-лист:* _(пусто)_")
+                lines.append(f"*Чек\\-лист:*\n{checklist_str}")
 
             updated_text = "\n".join(lines)
 
