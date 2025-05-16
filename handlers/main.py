@@ -14,7 +14,7 @@ from bitrix_service import (
     create_task_in_bitrix, get_user_id_from_webhook, get_overdue_tasks_report,
     get_my_projects, get_completed_tasks_report, get_user_name_from_bitrix,
     get_tasks_filtered_report, update_task_in_bitrix,
-    get_task_fields_from_bitrix
+    get_task_fields_from_bitrix, get_project_id_by_name, get_project_name_by_id
 )
 from db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
@@ -479,17 +479,23 @@ async def edit_task_callback(update: Update,
 
     keyboard = [
         [
-            InlineKeyboardButton("Название", callback_data=f"edit_field:"
-                                                           f"{task_id}:"
-                                                           f"title"),
-            InlineKeyboardButton("Дедлайн", callback_data=f"edit_field:"
-                                                          f"{task_id}:"
-                                                          f"deadline")
+            InlineKeyboardButton("Название",
+                                 callback_data=f"edit_field:{task_id}:title"),
+            InlineKeyboardButton("Дедлайн",
+                                 callback_data=f"edit_field:{task_id}:deadline"
+                                 ),
         ],
         [
-            InlineKeyboardButton("Описание", callback_data=f"edit_field:"
-                                                           f"{task_id}:"
-                                                           f"description")
+            InlineKeyboardButton(
+                "Описание",
+                callback_data=f"edit_field:{task_id}:description"
+            ),
+            InlineKeyboardButton("Проект",
+                                 callback_data=f"edit_field:{task_id}:project"
+                                 ),
+        ],
+        [
+            InlineKeyboardButton("Отмена", callback_data="cancel_edit")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -510,12 +516,6 @@ async def edit_task_callback(update: Update,
             reply_markup=reply_markup
         )
 
-    # await query.edit_message_text(
-    #     text=f"Вы выбрали редактировать задачу *{task_id}*.\nКакое поле "
-    #          f"хотите изменить?",
-    #     parse_mode="Markdown",
-    #     reply_markup=reply_markup
-    # )
     return CHOOSING_FIELD
 
 
@@ -537,11 +537,22 @@ async def edit_field_callback(update: Update,
     field_labels = {
         "title": "Введите новое название задачи:",
         "description": "Введите новое описание задачи:",
-        "deadline": "Введите новый дедлайн (формат YYYY-MM-DD HH:MM:SS):"
+        "deadline": "Введите новый дедлайн (формат YYYY-MM-DD HH:MM:SS):",
+        "project": "Введите название проекта:",
     }
     prompt = field_labels.get(field_name, "Введите новое значение:")
 
-    sent_msg = await query.edit_message_text(prompt)
+    keyboard = [
+        [
+            InlineKeyboardButton("Отмена", callback_data="cancel_edit")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    sent_msg = await query.edit_message_text(
+        text=prompt,
+        reply_markup=reply_markup
+    )
     context.user_data["edit_chat_id"] = sent_msg.chat_id
     context.user_data["edit_message_id"] = sent_msg.message_id
 
@@ -569,6 +580,23 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update_kwargs["description"] = text
     elif field_name == "deadline":
         update_kwargs["deadline"] = text
+    elif field_name == "project":
+        bitrix_url_for_search = await get_url_by_type(
+            update.effective_chat.id,
+            update.effective_chat.type,
+            context
+        )
+        if bitrix_url_for_search:
+            group_id = get_project_id_by_name(bitrix_url_for_search, text)
+            if group_id == -1:
+                await update.message.reply_text(
+                    "Проект с таким названием не найден. Попробуйте ещё раз."
+                )
+                return ConversationHandler.END
+            update_kwargs["group_id"] = group_id
+        else:
+            await update.message.reply_text("Нет настроенного Bitrix URL.")
+            return ConversationHandler.END
     else:
         logging.warning(f"Unknown field '{field_name}'")
         await update.message.reply_text("Неизвестное поле. Попробуйте заново.")
@@ -615,6 +643,8 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_description = updated_fields.get("description", "")
             new_deadline = updated_fields.get("deadline", "")
             new_responsible_id_str = updated_fields.get("responsibleId", "")
+            new_accomplices = updated_fields.get("accomplices", [])
+            new_group_id = updated_fields.get("groupId", 0)
 
             try:
                 new_responsible_id = int(new_responsible_id_str)
@@ -632,13 +662,41 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 dt = datetime.fromisoformat(new_deadline)
                 new_deadline = dt.strftime("%d/%m/%Y %H:%M")
 
+            project_name = ""
+            if new_group_id:
+                project_name = get_project_name_by_id(bitrix_url, new_group_id)
+                if project_name == "-1":
+                    project_name = ""
+
+            accomplices_names = []
+            for ac_id in new_accomplices:
+                ac_name = get_user_name_from_bitrix(bitrix_url, ac_id)
+                if ac_name:
+                    accomplices_names.append(ac_name)
+                else:
+                    accomplices_names.append(f"ID {ac_id}")
+
             new_lines = [
-                f"*Задача обновлена:* {escape_markdown(new_title, version=2)}",
-                f"*Описание:* {escape_markdown(new_description, version=2)}",
-                f"*Дедлайн:* {escape_markdown(new_deadline or "", version=2)}",
-                f"*Ответственный:* {escape_markdown(new_responsible_name, 
-                                                    version=2)}"
+                f"*Задача обновлена:* {escape_markdown(new_title, version=2)}"
             ]
+
+            description_escaped = escape_markdown(new_description, version=2)
+            deadline_escaped = escape_markdown(new_deadline or "", version=2)
+            project_name_escaped = escape_markdown(project_name, version=2)
+
+            if description_escaped:
+                new_lines.append(f"*Описание:* {description_escaped}")
+            if deadline_escaped:
+                new_lines.append(f"*Дедлайн:* {deadline_escaped}")
+            if project_name_escaped:
+                new_lines.append(f"*Проект:* {project_name_escaped}")
+            responsible_name_escaped = escape_markdown(new_responsible_name,
+                                                       version=2)
+            new_lines.append(f"*Ответственный:* {responsible_name_escaped}")
+            if accomplices_names:
+                joined_accomplices = ", ".join(escape_markdown(a, version=2)
+                                               for a in accomplices_names)
+                new_lines.append(f"*Соисполнители:* {joined_accomplices}")
             updated_text = "\n".join(new_lines)
 
             await context.bot.edit_message_text(
@@ -657,7 +715,14 @@ async def cancel_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Команда /cancel для выхода из редактирования (fallback).
     """
-    await update.message.reply_text("Редактирование отменено.")
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        await query.edit_message_text("Редактирование отменено.")
+
+    else:
+        await update.message.reply_text("Редактирование отменено.")
+
     return ConversationHandler.END
 
 
@@ -668,10 +733,12 @@ edit_task_conv_handler = ConversationHandler(
     states={
         CHOOSING_FIELD: [
             CallbackQueryHandler(edit_field_callback, pattern=r"^edit_field"
-                                                              r":\d+:.+")
+                                                              r":\d+:.+"),
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         WAITING_VALUE: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, edit_field_value)
+            MessageHandler(filters.TEXT & ~filters.COMMAND, edit_field_value),
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ]
     },
     fallbacks=[
