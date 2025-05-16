@@ -190,7 +190,7 @@ async def text_message_handler(update: Update,
     )
     if result:
         await update.message.reply_text("Задача поставлена!")
-        task_id = result['result']['task']['id']
+        task_id = int(result['result']['task']['id'])
     else:
         task_id = 0
 
