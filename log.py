@@ -13,3 +13,7 @@ logging.basicConfig(
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler",
                category=PTBUserWarning)
 warnings.filterwarnings("error", category=PTBDeprecationWarning)
+
+
+def start():
+    logging.info("[DEBUG] Bot started")
