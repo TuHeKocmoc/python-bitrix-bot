@@ -1010,9 +1010,7 @@ async def checklist_del_callback(update: Update,
             )
         return ConversationHandler.END
 
-    from bitrix_service import get_task_fields_from_bitrix
-    task_data = get_task_fields_from_bitrix(bitrix_url, task_id)
-    check_list = task_data.get("checkList", [])
+    check_list = get_checklist_items(bitrix_url, task_id)
 
     if not check_list:
         await query.edit_message_text("Чек-лист пуст.")
