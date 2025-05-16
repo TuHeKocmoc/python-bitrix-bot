@@ -664,6 +664,8 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
         data = resp.json()
         if "result" in data and isinstance(data["result"], dict):
             task_data = data["result"].get("task", {})
+            check_list_raw = task_data.get("SE_CHECKLIST", [])
+            task_data["checkList"] = check_list_raw
             return task_data
         else:
             logging.error("Bitrix error (get_task_fields_from_bitrix): "
