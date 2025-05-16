@@ -725,13 +725,15 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 joined_accomplices = ", ".join(escape_markdown(a, version=2)
                                                for a in accomplices_names)
                 new_lines.append(f"*Соисполнители:* {joined_accomplices}")
-            updated_text = "\n".join(new_lines)
 
             if checklist_lines:
                 escaped_lines = [escape_markdown(x, version=2) for x in
                                  checklist_lines]
                 checklist_str = "\n".join(escaped_lines)
                 new_lines.append(f"*Чек-лист:*\n{checklist_str}")
+
+
+            updated_text = "\n".join(new_lines)
 
             keyboard = [
                 [InlineKeyboardButton("Изменить задачу",
