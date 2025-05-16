@@ -643,6 +643,7 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     Получает данные о задаче (task_id) из Bitrix по-указанному webhook
     и возвращает структуру полей задачи (словарь).
     """
+    logging.debug(f"Requesting fields for task_id={task_id}")
     url = f"{webhook}tasks.task.get.json"
     payload = {
         "taskId": task_id,
@@ -657,7 +658,8 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
             "SE_CHECKLIST"
         ],
         "params": {
-            "ENTITY_SELECT": ["CHECK_LIST_ITEMS"]
+            "ENTITY_SELECT": ["CHECK_LIST_ITEMS"],
+            "AUX_DATA": ["CHECKLIST"]
         }
     }
 
@@ -740,3 +742,25 @@ def delete_checklist_item(webhook: str, task_id: int, item_id: str) -> bool:
     except Exception as e:
         logging.error(f"Bitrix delete_checklist_item error: {e}")
         return False
+
+
+def get_checklist_items(webhook: str, task_id: int) -> list:
+    """
+    Возвращает список пунктов чек-листа задачи (task_id) из Bitrix.
+    Каждый пункт — dict с ключами "ID", "TITLE", "IS_COMPLETE", и т.п.
+    """
+    url = f"{webhook}task.checklistitem.getList.json"
+    data = {"TASKID": task_id}
+    try:
+        resp = requests.post(url, json=data)
+        resp.raise_for_status()
+        resp_data = resp.json()
+        # [ {"ID": "123", "TITLE": "...", "IS_COMPLETE": "N"}, ... ]
+        items = resp_data.get("result", [])
+        if not items:
+            logging.debug(f"Пустой список чек-листа для задачи {task_id}")
+        return items
+    except Exception as e:
+        logging.error(f"Ошибка при запросе чек-листа для задачи {task_id} в "
+                      f"Bitrix: {e}")
+        return []
