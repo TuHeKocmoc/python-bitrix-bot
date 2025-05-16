@@ -14,7 +14,8 @@ from bitrix_service import (
     create_task_in_bitrix, get_user_id_from_webhook, get_overdue_tasks_report,
     get_my_projects, get_completed_tasks_report, get_user_name_from_bitrix,
     get_tasks_filtered_report, update_task_in_bitrix,
-    get_task_fields_from_bitrix, get_project_id_by_name, get_project_name_by_id
+    get_task_fields_from_bitrix, get_project_id_by_name,
+    get_project_name_by_id, add_checklist_item, delete_checklist_item
 )
 from db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
@@ -123,7 +124,11 @@ async def text_message_handler(update: Update,
 
     projects = get_my_projects(url)
     project_names = [p.get("NAME") for p in projects if p.get("NAME")]
-    parsed = parse_message_with_openai(text, available_projects=project_names)
+    parsed = await asyncio.to_thread(
+        parse_message_with_openai,
+        text,
+        available_projects=project_names
+    )
 
     title = parsed.get("title", "Без названия")
     deadline = parsed.get("deadline", "")
@@ -461,6 +466,9 @@ async def tasks_command_handler(update: Update,
 #############################
 
 CHOOSING_FIELD, WAITING_VALUE = range(2)
+CHECKLIST_MENU = 3
+CHECKLIST_ADD = 4
+CHECKLIST_DEL = 5
 
 
 async def edit_task_callback(update: Update,
@@ -495,7 +503,9 @@ async def edit_task_callback(update: Update,
                                  ),
         ],
         [
-            InlineKeyboardButton("Отмена", callback_data="cancel_edit")
+            InlineKeyboardButton("Отмена", callback_data="cancel_edit"),
+            InlineKeyboardButton("Чеклист",
+                                 callback_data=f"edit_checklist:{task_id}")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -725,6 +735,204 @@ async def cancel_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+async def edit_checklist_callback(update: Update,
+                                  context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data  # "edit_checklist:123"
+    _, task_id_str = data.split(":", 1)
+    task_id = int(task_id_str)
+
+    context.user_data["edit_task_id"] = task_id
+
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+    if not bitrix_url:
+        if query.message and isinstance(query.message, TelegramMessage):
+            await query.message.reply_text("Нет настроенного Bitrix URL.")
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Нет настроенного Bitrix URL."
+            )
+        return ConversationHandler.END
+
+    from bitrix_service import get_task_fields_from_bitrix
+    task_data = get_task_fields_from_bitrix(bitrix_url, task_id)
+    check_list = task_data.get("checkList", [])
+    # [{"ID": "12345", "TITLE": "Пункт", "IS_COMPLETE": "N"}, ...]
+
+    text_lines = ["**Текущий чек-лист:**"]
+    if check_list:
+        for i, item in enumerate(check_list, start=1):
+            title = item.get("TITLE", "Без названия")
+            is_complete = item.get("IS_COMPLETE", "N")
+            status_emoji = "✅" if is_complete == "Y" else "⬜"
+            text_lines.append(f"{i}. {status_emoji} {title}")
+    else:
+        text_lines.append("_(пусто)_")
+
+    keyboard = [
+        [
+            InlineKeyboardButton("Добавить пункт",
+                                 callback_data="checklist_add"),
+            InlineKeyboardButton("Удалить пункт",
+                                 callback_data="checklist_del")
+        ],
+        [
+            InlineKeyboardButton("Отмена", callback_data="cancel_edit")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text="\n".join(text_lines),
+        parse_mode="Markdown",
+        reply_markup=reply_markup
+    )
+    return CHECKLIST_MENU
+
+
+async def checklist_add_callback(update: Update,
+                                 context: ContextTypes.DEFAULT_TYPE):
+    """Переходим в режим добавления пункта: ждём ввод текста."""
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(
+        text="Введите текст нового пункта (сообщением)."
+    )
+    return CHECKLIST_ADD
+
+
+async def checklist_add_text(update: Update,
+                             context: ContextTypes.DEFAULT_TYPE):
+    """Новый пункт, добавляем через Bitrix API."""
+    new_item_title = update.message.text.strip()
+    task_id = context.user_data.get("edit_task_id")
+    if not task_id:
+        await update.message.reply_text("Неизвестная задача. Попробуйте "
+                                        "заново.")
+        return ConversationHandler.END
+
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного Bitrix URL.")
+        return ConversationHandler.END
+
+    add_ok = add_checklist_item(bitrix_url, task_id, new_item_title)
+
+    if add_ok:
+        await update.message.reply_text("Пункт добавлен в чек-лист.")
+    else:
+        await update.message.reply_text("Ошибка при добавлении пункта.")
+
+    return ConversationHandler.END
+
+
+async def checklist_del_callback(update: Update,
+                                 context: ContextTypes.DEFAULT_TYPE):
+    """Показываем список пунктов для удаления."""
+    query = update.callback_query
+    await query.answer()
+
+    task_id = context.user_data.get("edit_task_id")
+    if not task_id:
+        if query.message and isinstance(query.message, TelegramMessage):
+            await query.message.reply_text("Неизвестная задача.")
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text="Неизвестная задача.")
+        return ConversationHandler.END
+
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+    if not bitrix_url:
+        if query.message and isinstance(query.message, TelegramMessage):
+            await query.message.reply_text("Нет настроенного Bitrix URL.")
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Нет настроенного Bitrix URL."
+            )
+        return ConversationHandler.END
+
+    from bitrix_service import get_task_fields_from_bitrix
+    task_data = get_task_fields_from_bitrix(bitrix_url, task_id)
+    check_list = task_data.get("checkList", [])
+
+    if not check_list:
+        await query.edit_message_text("Чек-лист пуст.")
+        return CHECKLIST_MENU
+
+    buttons = []
+    text_lines = ["Выберите пункт для удаления:"]
+    for i, item in enumerate(check_list, start=1):
+        title = item.get("TITLE", "Без названия")
+        item_id = item.get("ID", "")
+        text_lines.append(f"{i}. {title}")
+        buttons.append([
+            InlineKeyboardButton(
+                f"Удалить {i}",
+                callback_data=f"checklist_del_item:{item_id}"
+            )
+        ])
+    buttons.append([InlineKeyboardButton("Отмена",
+                                         callback_data="cancel_edit")])
+
+    await query.edit_message_text(
+        "\n".join(text_lines),
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+    return CHECKLIST_DEL
+
+
+async def checklist_del_item_callback(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
+    """Удаляем конкретный пункт по item_id из чек-листа."""
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data  # "checklist_del_item:12345"
+    _, item_id_str = data.split(":", 1)
+    item_id = item_id_str
+
+    task_id = context.user_data.get("edit_task_id")
+    if not task_id:
+        if not task_id:
+            if query.message and isinstance(query.message, TelegramMessage):
+                await query.message.reply_text("Неизвестная задача.")
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Неизвестная задача.")
+        return ConversationHandler.END
+
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+    if not bitrix_url:
+        if query.message and isinstance(query.message, TelegramMessage):
+            await query.message.reply_text("Нет настроенного Bitrix URL.")
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Нет настроенного Bitrix URL."
+            )
+        return ConversationHandler.END
+
+    success = delete_checklist_item(bitrix_url, task_id, item_id)
+
+    if success:
+        await query.edit_message_text("Пункт удалён из чек-листа.")
+    else:
+        await query.edit_message_text("Ошибка при удалении пункта.")
+
+    return CHECKLIST_MENU
 
 edit_task_conv_handler = ConversationHandler(
     entry_points=[
@@ -738,6 +946,19 @@ edit_task_conv_handler = ConversationHandler(
         ],
         WAITING_VALUE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, edit_field_value),
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
+        ],
+        CHECKLIST_MENU: [
+            CallbackQueryHandler(checklist_add_callback, pattern="checklist_add"),
+            CallbackQueryHandler(checklist_del_callback, pattern="checklist_del"),
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
+        ],
+        CHECKLIST_ADD: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, checklist_add_text),
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
+        ],
+        CHECKLIST_DEL: [
+            CallbackQueryHandler(checklist_del_item_callback, pattern=r"^checklist_del_item:.+"),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ]
     },

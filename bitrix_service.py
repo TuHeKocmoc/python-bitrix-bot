@@ -637,6 +637,7 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
     report_text = f"*{header_escaped}*\n\n" + "\n".join(report_lines)
     return report_text
 
+
 def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     """
     Получает данные о задаче (task_id) из Bitrix по-указанному webhook
@@ -661,3 +662,64 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     except Exception as e:
         logging.error(f"Ошибка при запросе задачи {task_id} в Bitrix: {e}")
         return {}
+
+
+def add_checklist_item(webhook: str, task_id: int, title: str) -> bool:
+    """
+    Добавляет новый пункт чек-листа к задаче (task_id) через Bitrix API.
+    Возвращает True при успехе, иначе False.
+    """
+    url = f"{webhook}task.checklistitem.add.json"
+    data = {
+        "TASKID": task_id,
+        "FIELDS": {
+            "TITLE": title,
+            "IS_COMPLETE": "N",
+            "SORT_INDEX": 10
+        }
+    }
+
+    try:
+        resp = requests.post(url, json=data)
+        resp.raise_for_status()
+        resp_data = resp.json()
+        if "result" in resp_data and resp_data["result"]:
+            logging.debug(f"Пункт чеклиста '{title}' добавлен к задаче "
+                          f"{task_id}.")
+            return True
+        else:
+            logging.error(f"Ошибка при добавлении пункта чеклиста: "
+                          f"{resp_data}")
+            return False
+
+    except Exception as e:
+        logging.error(f"Bitrix add_checklist_item error: {e}")
+        return False
+
+
+def delete_checklist_item(webhook: str, task_id: int, item_id: str) -> bool:
+    """
+    Удаляет пункт чек-листа с ID (item_id) у задачи (task_id) через Bitrix API.
+    Возвращает True при успехе, иначе False.
+    """
+    url = f"{webhook}task.checklistitem.delete.json"
+    data = {
+        "TASKID": task_id,
+        "ITEMID": item_id
+    }
+
+    try:
+        resp = requests.post(url, json=data)
+        resp.raise_for_status()
+        resp_data = resp.json()
+        if "result" in resp_data and resp_data["result"] is True:
+            logging.debug(f"Пункт чеклиста {item_id} удалён из задачи "
+                          f"{task_id}.")
+            return True
+        else:
+            logging.error(f"Ошибка при удалении пункта чеклиста: {resp_data}")
+            return False
+
+    except Exception as e:
+        logging.error(f"Bitrix delete_checklist_item error: {e}")
+        return False
