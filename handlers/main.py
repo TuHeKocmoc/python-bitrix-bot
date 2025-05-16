@@ -601,9 +601,20 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if bitrix_url_for_search:
             group_id = get_project_id_by_name(bitrix_url_for_search, text)
             if group_id == -1:
-                await update.message.reply_text(
-                    "Проект с таким названием не найден. Попробуйте ещё раз."
-                )
+                old_chat_id = context.user_data.get("edit_chat_id")
+                old_message_id = context.user_data.get("edit_message_id")
+
+                if old_chat_id and old_message_id:
+                    try:
+                        await context.bot.edit_message_text(
+                            chat_id=old_chat_id,
+                            message_id=old_message_id,
+                            text="Проект с таким названием не найден. "
+                                 "Попробуйте ещё раз."
+                        )
+                    except BadRequest:
+                        logging.debug(
+                            "Попытка редактировать сообщение не удалась.")
                 return ConversationHandler.END
             update_kwargs["group_id"] = group_id
         else:
