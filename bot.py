@@ -97,13 +97,13 @@ def main():
     application.add_handler(CommandHandler("report", report_command_handler))
     application.add_handler(CommandHandler("tasks", tasks_command_handler))
 
+    application.add_handler(edit_task_conv_handler)
+
     application.add_handler(MessageHandler((filters.TEXT | filters.VOICE)
                                            & ~filters.COMMAND,
                                            text_message_handler))
     # application.add_handler(
     #     CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
-
-    application.add_handler(edit_task_conv_handler)
 
     init_db()
 
@@ -127,6 +127,7 @@ def main():
         scheduler.start_in_background()
 
     application.run_polling()
+    log.start()
 
 
 if __name__ == "__main__":
