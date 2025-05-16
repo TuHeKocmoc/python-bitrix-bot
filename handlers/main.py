@@ -731,7 +731,7 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 escaped_lines = [escape_markdown(x, version=2) for x in
                                  checklist_lines]
                 checklist_str = "\n".join(escaped_lines)
-                new_lines.append(f"*Чек-лист:*\n{checklist_str}")
+                new_lines.append(f"*Чек\\-лист:*\n{checklist_str}")
 
             updated_text = "\n".join(new_lines)
 
