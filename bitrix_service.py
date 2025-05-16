@@ -643,6 +643,7 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     Получает данные о задаче (task_id) из Bitrix по-указанному webhook
     и возвращает структуру полей задачи (словарь).
     """
+    logging.debug(f"Requesting fields for task_id={task_id}")
     url = f"{webhook}tasks.task.get.json"
     payload = {
         "taskId": task_id,
@@ -657,7 +658,8 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
             "SE_CHECKLIST"
         ],
         "params": {
-            "ENTITY_SELECT": ["CHECK_LIST_ITEMS"]
+            "ENTITY_SELECT": ["CHECK_LIST_ITEMS"],
+            "AUX_DATA": ["CHECKLIST"]
         }
     }
 
