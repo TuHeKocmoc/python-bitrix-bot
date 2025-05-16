@@ -28,6 +28,12 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
 
     try:
         resp = requests.post(url, json=data)
+        logging.debug(f"Bitrix create task raw response: {resp.text}")
+        resp.raise_for_status()
+        if resp.status_code != 200:
+            logging.error(
+                f"Bitrix responded with {resp.status_code}: {resp.text}")
+            return None
         resp_data = resp.json()
         task_id = resp_data['result']['task']['id']
         logging.debug("STATUS CODE:", resp.status_code)
