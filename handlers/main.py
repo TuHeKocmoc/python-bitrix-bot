@@ -143,6 +143,7 @@ async def text_message_handler(update: Update,
     logging.debug(f"[TASK PARSING] executors={executors}")
 
     bitrix_executors = []
+    bitrix_executors_names = []
     for exec_username in executors:
         b_id = get_bitrix_id_for_user(exec_username)
         logging.debug(
@@ -154,7 +155,8 @@ async def text_message_handler(update: Update,
                 f"fallback на админа")
         if b_id:
             name_in_bitrix = get_user_name_from_bitrix(url, b_id)
-            bitrix_executors.append(name_in_bitrix)
+            bitrix_executors_names.append(name_in_bitrix)
+            bitrix_executors.append(b_id)
             logging.debug(
                 f"[TASK PARSING] user '{exec_username}' => name_in_bitrix="
                 f"'{name_in_bitrix}'")
@@ -165,16 +167,18 @@ async def text_message_handler(update: Update,
             f"[TASK PARSING] Responsible ID (bitrix_executors[0]) = "
             f"{responsible_id}")
     else:
-        fallback_id = get_user_id_from_webhook(url)
-        responsible_id = get_user_name_from_bitrix(url, fallback_id)
+        responsible_id = get_user_id_from_webhook(url)
         logging.debug(
-            f"[TASK PARSING] Fallback admin ID => {fallback_id}, "
-            f"name_in_bitrix='{responsible_id}'")
+            f"[TASK PARSING] Fallback admin ID => {responsible_id} ")
 
     accomplices = bitrix_executors[1:] if len(bitrix_executors) > 1 else []
+    accomplices_names = bitrix_executors_names[1:] if len(
+        bitrix_executors_names) > 1 else []
     if not url:
         await update.message.reply_text("Не задан URL")
         return
+
+    responsible_name = get_user_name_from_bitrix(url, responsible_id)
 
     result = create_task_in_bitrix(url, title, description, deadline,
                                    responsible_id, checklist, accomplices,
@@ -192,10 +196,10 @@ async def text_message_handler(update: Update,
         description_escaped = escape_markdown(description, version=2)
         deadline_escaped = escape_markdown(deadline, version=2)
         project_name_escaped = escape_markdown(project_name, version=2)
-        responsible_id_escaped = escape_markdown(str(responsible_id),
-                                                 version=2)
+        responsible_name_escaped = escape_markdown(str(responsible_name),
+                                                   version=2)
         accomplices_escaped = [escape_markdown(str(a), version=2) for a in
-                               accomplices]
+                               accomplices_names]
         checklist_escaped = [escape_markdown(item, version=2) for item in
                              checklist]
 
@@ -216,8 +220,8 @@ async def text_message_handler(update: Update,
             lines.append(f"*Дедлайн:* {deadline_escaped}")
         if project_name_escaped:
             lines.append(f"*Проект:* {project_name_escaped}")
-        if responsible_id_escaped:
-            lines.append(f"*Ответственный:* {responsible_id_escaped}")
+        if responsible_name_escaped:
+            lines.append(f"*Ответственный:* {responsible_name_escaped}")
         if accomplices_escaped:
             lines.append(
                 f"*Соисполнители:* {', '.join(accomplices_escaped)}")
@@ -442,7 +446,6 @@ async def tasks_command_handler(update: Update,
 
     await update.message.reply_text(report_text,
                                     parse_mode=ParseMode.MARKDOWN_V2)
-
 
 # async def edit_task_callback(update: Update,
 # context: ContextTypes.DEFAULT_TYPE):
