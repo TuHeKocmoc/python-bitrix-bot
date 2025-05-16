@@ -942,7 +942,9 @@ edit_task_conv_handler = ConversationHandler(
         CHOOSING_FIELD: [
             CallbackQueryHandler(edit_field_callback, pattern=r"^edit_field"
                                                               r":\d+:.+"),
-            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit"),
+            CallbackQueryHandler(edit_checklist_callback,
+                                 pattern=r"^edit_checklist:\d+")
         ],
         WAITING_VALUE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, edit_field_value),
