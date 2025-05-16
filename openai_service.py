@@ -1,6 +1,7 @@
 import logging
 
 from openai import OpenAI
+from openai.types.chat import ChatCompletionUserMessageParam
 import json
 from config import OPENAI_API_KEY
 from datetime import datetime
@@ -59,11 +60,15 @@ def parse_message_with_openai(message_text: str,
     """
 
     try:
-        response = client.chat.completions.create(model="o3-mini",
-                                                  messages=[
-                                                      {"role": "user",
-                                                       "content": prompt}
-                                                  ])
+        response = client.chat.completions.create(
+            model="o3-mini",
+            messages=[
+                ChatCompletionUserMessageParam(
+                    role="user",
+                    content=prompt
+                )
+            ]
+        )
 
         content = response.choices[0].message.content
         logging.debug("RAW CONTENT:", repr(content))

@@ -530,10 +530,10 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
 
     if user_id:
         not_completed["RESPONSIBLE_ID"] = user_id
-        completed_this_week["RESPONSIBLE_ID"] = user_id
+        completed_this_week["RESPONSIBLE_ID"] = str(user_id)
     if group_id:
         not_completed["GROUP_ID"] = group_id
-        completed_this_week["GROUP_ID"] = group_id
+        completed_this_week["GROUP_ID"] = str(group_id)
 
     filter_data = {
         "LOGIC": "OR",
