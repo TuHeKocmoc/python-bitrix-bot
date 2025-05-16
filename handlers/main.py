@@ -626,10 +626,13 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_responsible_name = get_user_name_from_bitrix(
                 bitrix_url, new_responsible_id) or f"ID {new_responsible_id}"
 
+            if new_deadline is None:
+                new_deadline = ""
+
             new_lines = [
                 f"*Задача обновлена:* {escape_markdown(new_title, version=2)}",
                 f"*Описание:* {escape_markdown(new_description, version=2)}",
-                f"*Дедлайн:* {escape_markdown(new_deadline, version=2)}"
+                f"*Дедлайн:* {escape_markdown(new_deadline or "", version=2)}"
                 f"*Ответственный:* {escape_markdown(new_responsible_name, 
                                                     version=2)}"
             ]
