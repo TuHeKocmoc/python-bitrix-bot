@@ -601,22 +601,36 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     task_entry = context.user_data.get("created_tasks", {}).get(task_id)
+    logging.debug(f"task_entry={task_entry}, "
+                  f"created_tasks={context.user_data.get('created_tasks')}")
     if task_entry:
         original_chat_id = task_entry["chat_id"]
         original_msg_id = task_entry["message_id"]
 
         updated_fields = get_task_fields_from_bitrix(bitrix_url, task_id)
+        logging.debug(f"updated_fields={updated_fields}")
 
         if updated_fields:
             new_title = updated_fields.get("TITLE", "Без названия")
             new_deadline = updated_fields.get("DEADLINE", "")
             new_description = updated_fields.get("DESCRIPTION", "")
-            new_responsible_id = updated_fields.get("RESPONSIBLE_ID", "")
+            new_responsible_id_str = updated_fields.get("RESPONSIBLE_ID", "")
+            try:
+                new_responsible_id = int(new_responsible_id_str)
+            except ValueError:
+                logging.warning(
+                    f"RESPONSIBLE_ID is '{new_responsible_id_str}', can't "
+                    f"parse.")
+                new_responsible_id = 0
+            new_responsible_name = get_user_name_from_bitrix(
+                bitrix_url, new_responsible_id) or f"ID {new_responsible_id}"
 
             new_lines = [
                 f"*Задача обновлена:* {escape_markdown(new_title, version=2)}",
                 f"*Описание:* {escape_markdown(new_description, version=2)}",
                 f"*Дедлайн:* {escape_markdown(new_deadline, version=2)}"
+                f"*Ответственный:* {escape_markdown(new_responsible_name, 
+                                                    version=2)}"
             ]
             updated_text = "\n".join(new_lines)
 
