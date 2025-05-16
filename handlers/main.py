@@ -736,6 +736,7 @@ async def cancel_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+
 async def edit_checklist_callback(update: Update,
                                   context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -765,9 +766,15 @@ async def edit_checklist_callback(update: Update,
 
     text_lines = ["**Текущий чек-лист:**"]
     if check_list:
-        for i, item in enumerate(check_list, start=1):
-            title = item.get("TITLE", "Без названия")
-            if title == "BXCHECKLIST1":
+        filtered_check_list = [
+            x for x in check_list
+            if x.get("TITLE", "").strip().lower() != "bxchecklist1"
+        ]
+
+        for i, item in enumerate(filtered_check_list, start=1):
+            title = item.get("TITLE", "Без названия").strip()
+            logging.debug(f"CheckList item title: {repr(title)}")
+            if title.lower() == "bxchecklist1":
                 continue
             is_complete = item.get("IS_COMPLETE", "N")
             status_emoji = "✅" if is_complete == "Y" else "⬜"
@@ -952,16 +959,20 @@ edit_task_conv_handler = ConversationHandler(
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_MENU: [
-            CallbackQueryHandler(checklist_add_callback, pattern="checklist_add"),
-            CallbackQueryHandler(checklist_del_callback, pattern="checklist_del"),
+            CallbackQueryHandler(checklist_add_callback,
+                                 pattern="checklist_add"),
+            CallbackQueryHandler(checklist_del_callback,
+                                 pattern="checklist_del"),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_ADD: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, checklist_add_text),
+            MessageHandler(filters.TEXT & ~filters.COMMAND,
+                           checklist_add_text),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_DEL: [
-            CallbackQueryHandler(checklist_del_item_callback, pattern=r"^checklist_del_item:.+"),
+            CallbackQueryHandler(checklist_del_item_callback,
+                                 pattern=r"^checklist_del_item:.+"),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ]
     },
