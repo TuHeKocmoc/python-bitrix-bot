@@ -1,6 +1,7 @@
 from telegram import (
     Update, User, InlineKeyboardButton, InlineKeyboardMarkup
 )
+from telegram import Message as TelegramMessage
 from telegram.ext import (
     ContextTypes,
     ConversationHandler,
@@ -504,12 +505,28 @@ async def edit_task_callback(update: Update,
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await query.edit_message_text(
-        text=f"Вы выбрали редактировать задачу *{task_id}*.\nКакое поле "
-             f"хотите изменить?",
-        parse_mode="Markdown",
-        reply_markup=reply_markup
-    )
+    if query.message and isinstance(query.message, TelegramMessage):
+        await query.message.reply_text(
+            text=f"Вы выбрали редактировать задачу *{task_id}*.\nКакое поле "
+                 f"хотите изменить?",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Вы выбрали редактировать задачу *{task_id}*.\nКакое поле "
+                 f"хотите изменить?",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+
+    # await query.edit_message_text(
+    #     text=f"Вы выбрали редактировать задачу *{task_id}*.\nКакое поле "
+    #          f"хотите изменить?",
+    #     parse_mode="Markdown",
+    #     reply_markup=reply_markup
+    # )
     return CHOOSING_FIELD
 
 
@@ -534,6 +551,14 @@ async def edit_field_callback(update: Update,
         "deadline": "Введите новый дедлайн (формат YYYY-MM-DD HH:MM:SS):"
     }
     prompt = field_labels.get(field_name, "Введите новое значение:")
+
+    # if query.message:
+    #     await query.message.reply_text(prompt)
+    # else:
+    #     await context.bot.send_message(
+    #         chat_id=update.effective_chat.id,
+    #         text=prompt
+    #     )
 
     await query.edit_message_text(prompt)
     return WAITING_VALUE
