@@ -1012,13 +1012,19 @@ async def checklist_del_callback(update: Update,
 
     check_list = get_checklist_items(bitrix_url, task_id)
 
+    filtered_check_list = [
+        x for x in check_list
+        if
+        x.get("TITLE", "").lower().replace("_", "").strip() != "bxchecklist1"
+    ]
+
     if not check_list:
         await query.edit_message_text("Чек-лист пуст.")
         return CHECKLIST_MENU
 
     buttons = []
     text_lines = ["Выберите пункт для удаления:"]
-    for i, item in enumerate(check_list, start=1):
+    for i, item in enumerate(filtered_check_list, start=1):
         title = item.get("TITLE", "Без названия")
         item_id = item.get("ID", "")
         text_lines.append(f"{i}. {title}")
