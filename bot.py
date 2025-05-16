@@ -21,12 +21,19 @@ from handlers.main import (start_handler, text_message_handler,
 import logging
 import asyncio
 from apscheduler import Scheduler
+from warnings import filterwarnings
+import warnings
+from telegram.warnings import PTBUserWarning, PTBDeprecationWarning
 logging.basicConfig(
     filename='bot.log',
     filemode='w',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.DEBUG
 )
+
+filterwarnings(action="ignore", message=r".*CallbackQueryHandler",
+               category=PTBUserWarning)
+warnings.filterwarnings("error", category=PTBDeprecationWarning)
 
 
 async def delay_command_handler_daily_all(application,

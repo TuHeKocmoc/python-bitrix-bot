@@ -606,6 +606,5 @@ edit_task_conv_handler = ConversationHandler(
     },
     fallbacks=[
         CommandHandler("cancel", cancel_edit)
-    ],
-    per_message=True
+    ]
 )
