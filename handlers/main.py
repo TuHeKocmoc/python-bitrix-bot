@@ -3,36 +3,22 @@ from telegram import (
 )
 from telegram import Message as TelegramMessage
 from telegram.ext import (
-    ContextTypes,
-    ConversationHandler,
-    CallbackQueryHandler,
-    CommandHandler,
-    MessageHandler,
-    filters
+    ContextTypes, ConversationHandler, CallbackQueryHandler,
+    CommandHandler, MessageHandler, filters
 )
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
 
 from openai_service import parse_message_with_openai
 from bitrix_service import (
-    create_task_in_bitrix,
-    get_user_id_from_webhook,
-    get_overdue_tasks_report,
-    get_my_projects,
-    get_completed_tasks_report,
-    get_user_name_from_bitrix,
-    get_tasks_filtered_report,
-    update_task_in_bitrix
+    create_task_in_bitrix, get_user_id_from_webhook, get_overdue_tasks_report,
+    get_my_projects, get_completed_tasks_report, get_user_name_from_bitrix,
+    get_tasks_filtered_report, update_task_in_bitrix,
+    get_task_fields_from_bitrix
 )
 from db import (
-    add_user,
-    set_url,
-    get_url,
-    get_user,
-    set_user_bitrix_id,
-    get_bitrix_id_for_user,
-    set_user_chat_id,
-    set_main_chat_id
+    add_user, set_url, get_url, get_user, set_user_bitrix_id,
+    get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id
 )
 import logging
 import asyncio
@@ -43,9 +29,7 @@ import uuid
 from pydub import AudioSegment
 from tinkoff_service import transcribe_wav_tinkoff
 from utils import (
-    extract_mention_username,
-    get_url_by_type,
-    get_uinfo_from_admins
+    extract_mention_username, get_url_by_type, get_uinfo_from_admins
 )
 
 
@@ -257,12 +241,17 @@ async def text_message_handler(update: Update,
 
         task_details = "\n".join(lines)
         try:
-            await context.bot.send_message(
+            sent_msg = await context.bot.send_message(
                 notification_group_id,
                 task_details,
                 parse_mode=ParseMode.MARKDOWN_V2,
                 reply_markup=reply_markup
             )
+            context.user_data.setdefault("created_tasks", {})
+            context.user_data["created_tasks"][task_id] = {
+                "chat_id": notification_group_id,
+                "message_id": sent_msg.message_id
+            }
         except Exception as e:
             logging.error(f"Ошибка при отправке сообщения в группу: {e}")
             await update.message.reply_text(
@@ -552,15 +541,10 @@ async def edit_field_callback(update: Update,
     }
     prompt = field_labels.get(field_name, "Введите новое значение:")
 
-    # if query.message:
-    #     await query.message.reply_text(prompt)
-    # else:
-    #     await context.bot.send_message(
-    #         chat_id=update.effective_chat.id,
-    #         text=prompt
-    #     )
+    sent_msg = await query.edit_message_text(prompt)
+    context.user_data["edit_chat_id"] = sent_msg.chat_id
+    context.user_data["edit_message_id"] = sent_msg.message_id
 
-    await query.edit_message_text(prompt)
     return WAITING_VALUE
 
 
@@ -600,11 +584,51 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     result = update_task_in_bitrix(bitrix_url, **update_kwargs)
-    if result:
-        await update.message.reply_text("Задача успешно обновлена!")
-    else:
-        await update.message.reply_text("Ошибка при обновлении задачи.")
+    old_chat_id = context.user_data.get("edit_chat_id")
+    old_message_id = context.user_data.get("edit_message_id")
 
+    if result:
+        await context.bot.edit_message_text(
+            chat_id=old_chat_id,
+            message_id=old_message_id,
+            text="Задача успешно обновлена!"
+        )
+    else:
+        await context.bot.edit_message_text(
+            chat_id=old_chat_id,
+            message_id=old_message_id,
+            text="Ошибка при обновлении задачи."
+        )
+
+    task_entry = context.user_data.get("created_tasks", {}).get(task_id)
+    if task_entry:
+        original_chat_id = task_entry["chat_id"]
+        original_msg_id = task_entry["message_id"]
+
+        updated_fields = get_task_fields_from_bitrix(bitrix_url, task_id)
+
+        if updated_fields:
+            new_title = updated_fields.get("TITLE", "Без названия")
+            new_deadline = updated_fields.get("DEADLINE", "")
+            new_description = updated_fields.get("DESCRIPTION", "")
+            new_responsible_id = updated_fields.get("RESPONSIBLE_ID", "")
+
+            new_lines = [
+                f"*Задача обновлена:* {escape_markdown(new_title, version=2)}",
+                f"*Описание:* {escape_markdown(new_description, version=2)}",
+                f"*Дедлайн:* {escape_markdown(new_deadline, version=2)}"
+            ]
+            updated_text = "\n".join(new_lines)
+
+            await context.bot.edit_message_text(
+                chat_id=original_chat_id,
+                message_id=original_msg_id,
+                text=updated_text,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+        else:
+            logging.warning(
+                f"Не удалось получить updated_fields для задачи {task_id}")
     return ConversationHandler.END
 
 
