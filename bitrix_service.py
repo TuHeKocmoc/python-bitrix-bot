@@ -645,7 +645,17 @@ def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
     """
     url = f"{webhook}tasks.task.get.json"
     payload = {
-        "taskId": task_id
+        "taskId": task_id,
+        "select": [
+            "ID",
+            "TITLE",
+            "DESCRIPTION",
+            "DEADLINE",
+            "RESPONSIBLE_ID",
+            "ACCOMPLICES",
+            "GROUP_ID",
+            "SE_CHECKLIST"
+        ]
     }
 
     try:
