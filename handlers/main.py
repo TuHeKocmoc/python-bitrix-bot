@@ -1215,7 +1215,8 @@ edit_task_conv_handler = ConversationHandler(
                                  pattern="checklist_add"),
             CallbackQueryHandler(checklist_del_callback,
                                  pattern="checklist_del"),
-            CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
+            CallbackQueryHandler(cancel_edit, pattern="cancel_edit"),
+            CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:\d+")
         ],
         CHECKLIST_ADD: [
             MessageHandler(filters.TEXT & ~filters.COMMAND,
