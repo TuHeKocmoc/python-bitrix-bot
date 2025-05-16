@@ -1,4 +1,7 @@
+import log
 from datetime import datetime, timedelta
+
+import logging
 
 from apscheduler.triggers.cron import CronTrigger
 from telegram.ext import (
@@ -18,22 +21,8 @@ from handlers.main import (start_handler, text_message_handler,
                            notifications_command_handler,
                            main_command_handler, report_command_handler,
                            tasks_command_handler, edit_task_conv_handler)
-import logging
 import asyncio
 from apscheduler import Scheduler
-from warnings import filterwarnings
-import warnings
-from telegram.warnings import PTBUserWarning, PTBDeprecationWarning
-logging.basicConfig(
-    filename='bot.log',
-    filemode='w',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
-)
-
-filterwarnings(action="ignore", message=r".*CallbackQueryHandler",
-               category=PTBUserWarning)
-warnings.filterwarnings("error", category=PTBDeprecationWarning)
 
 
 async def delay_command_handler_daily_all(application,
