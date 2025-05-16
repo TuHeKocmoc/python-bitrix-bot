@@ -93,7 +93,6 @@ async def text_message_handler(update: Update,
 
     voice = update.message.voice
     if voice:
-        # Обрабатываем голосовое сообщение
         file = await context.bot.get_file(voice.file_id)
         ogg_path = f"temp_{uuid.uuid4().hex}.ogg"
         await file.download_to_drive(ogg_path)
@@ -126,14 +125,12 @@ async def text_message_handler(update: Update,
             if os.path.exists(wav_path):
                 os.remove(wav_path)
     else:
-        # Текстовое сообщение
         text = update.message.text
         if '#задача' not in text.lower():
             return
 
     chat_id = update.effective_chat.id
 
-    # Получаем URL и чат для уведомлений от одного из админов
     url, notification_group_id = await get_uinfo_from_admins(chat_id, context)
     if not url:
         await update.message.reply_text("Не задан URL")
@@ -156,7 +153,6 @@ async def text_message_handler(update: Update,
                 group_id = proj.get("ID")
                 break
 
-    # Ищем исполнителя среди mention'а и reply
     mention_user = extract_mention_username(update.message)
     reply_user_obj = update.message.reply_to_message.from_user \
         if update.message.reply_to_message else None
@@ -213,9 +209,7 @@ async def text_message_handler(update: Update,
     else:
         task_id = 0
 
-    # Отправляем уведомление в группу, если задано
     if notification_group_id and task_id:
-        # Экранируем для Markdown V2
         title_escaped = escape_markdown(title, version=2)
         description_escaped = escape_markdown(description, version=2)
         deadline_escaped = escape_markdown(deadline, version=2)
@@ -613,4 +607,5 @@ edit_task_conv_handler = ConversationHandler(
     fallbacks=[
         CommandHandler("cancel", cancel_edit)
     ],
+    per_message=True
 )
