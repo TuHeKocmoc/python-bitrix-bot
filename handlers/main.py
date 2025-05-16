@@ -736,6 +736,7 @@ async def cancel_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+
 async def edit_checklist_callback(update: Update,
                                   context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -770,7 +771,7 @@ async def edit_checklist_callback(update: Update,
             if x.get("TITLE", "").strip().lower() != "bxchecklist1"
         ]
 
-        for i, item in enumerate(check_list, start=1):
+        for i, item in enumerate(filtered_check_list, start=1):
             title = item.get("TITLE", "Без названия").strip()
             logging.debug(f"CheckList item title: {repr(title)}")
             if title.lower() == "bxchecklist1":
@@ -963,7 +964,8 @@ edit_task_conv_handler = ConversationHandler(
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_ADD: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, checklist_add_text),
+            MessageHandler(filters.TEXT & ~filters.COMMAND,
+                           checklist_add_text),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_DEL: [
