@@ -5,7 +5,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
-    filters, ContextTypes, CallbackQueryHandler
+    filters, ContextTypes
 )
 
 from bitrix_service import get_completed_tasks_report, get_overdue_tasks_report
@@ -17,7 +17,7 @@ from handlers.main import (start_handler, text_message_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
                            main_command_handler, report_command_handler,
-                           tasks_command_handler)  # edit_task_callback)
+                           tasks_command_handler, edit_task_conv_handler)
 import logging
 import asyncio
 from apscheduler import Scheduler
@@ -106,6 +106,8 @@ def main():
                                            text_message_handler))
     # application.add_handler(
     #     CallbackQueryHandler(edit_task_callback, pattern=r"^edit_task:"))
+
+    application.add_handler(edit_task_conv_handler)
 
     init_db()
 
