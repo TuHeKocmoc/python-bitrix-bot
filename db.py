@@ -32,6 +32,17 @@ def init_db():
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sprints (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          chat_id BIGINT NOT NULL,
+          deadline DATETIME NULL,
+          is_active TINYINT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            ON UPDATE CURRENT_TIMESTAMP
+        );
+        """)
         conn.commit()
         cursor.close()
         conn.close()
