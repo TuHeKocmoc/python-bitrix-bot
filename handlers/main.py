@@ -611,10 +611,11 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.debug(f"updated_fields={updated_fields}")
 
         if updated_fields:
-            new_title = updated_fields.get("TITLE", "Без названия")
-            new_deadline = updated_fields.get("DEADLINE", "")
-            new_description = updated_fields.get("DESCRIPTION", "")
-            new_responsible_id_str = updated_fields.get("RESPONSIBLE_ID", "")
+            new_title = updated_fields.get("title", "Без названия")
+            new_description = updated_fields.get("description", "")
+            new_deadline = updated_fields.get("deadline", "")
+            new_responsible_id_str = updated_fields.get("responsibleId", "")
+
             try:
                 new_responsible_id = int(new_responsible_id_str)
             except ValueError:
