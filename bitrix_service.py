@@ -636,3 +636,28 @@ def get_tasks_filtered_report(bitrix_url: str, query=None) -> str:
 
     report_text = f"*{header_escaped}*\n\n" + "\n".join(report_lines)
     return report_text
+
+def get_task_fields_from_bitrix(webhook, task_id: int) -> dict:
+    """
+    Получает данные о задаче (task_id) из Bitrix по-указанному webhook
+    и возвращает структуру полей задачи (словарь).
+    """
+    url = f"{webhook}tasks.task.get.json"
+    payload = {
+        "taskId": task_id
+    }
+
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        if "result" in data and isinstance(data["result"], dict):
+            task_data = data["result"].get("task", {})
+            return task_data
+        else:
+            logging.error("Bitrix error (get_task_fields_from_bitrix): "
+                          f"{data.get('error_description')}")
+            return {}
+    except Exception as e:
+        logging.error(f"Ошибка при запросе задачи {task_id} в Bitrix: {e}")
+        return {}
