@@ -959,8 +959,10 @@ edit_task_conv_handler = ConversationHandler(
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_MENU: [
-            CallbackQueryHandler(checklist_add_callback, pattern="checklist_add"),
-            CallbackQueryHandler(checklist_del_callback, pattern="checklist_del"),
+            CallbackQueryHandler(checklist_add_callback,
+                                 pattern="checklist_add"),
+            CallbackQueryHandler(checklist_del_callback,
+                                 pattern="checklist_del"),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_ADD: [
@@ -969,7 +971,8 @@ edit_task_conv_handler = ConversationHandler(
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ],
         CHECKLIST_DEL: [
-            CallbackQueryHandler(checklist_del_item_callback, pattern=r"^checklist_del_item:.+"),
+            CallbackQueryHandler(checklist_del_item_callback,
+                                 pattern=r"^checklist_del_item:.+"),
             CallbackQueryHandler(cancel_edit, pattern="cancel_edit")
         ]
     },
