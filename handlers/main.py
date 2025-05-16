@@ -692,8 +692,9 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
             checklist_lines = []
             filtered_list = [
                 x for x in updated_checklist
-                if x.get("TITLE", "").lower().replace("_",
-                                                      "").strip() != "bxchecklist1"
+                if x.get("TITLE",
+                         "").lower().replace("_",
+                                             "").strip() != "bxchecklist1"
             ]
             if filtered_list:
                 for i, item in enumerate(filtered_list, start=1):
@@ -732,7 +733,6 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 checklist_str = "\n".join(escaped_lines)
                 new_lines.append(f"*Чек-лист:*\n{checklist_str}")
 
-
             updated_text = "\n".join(new_lines)
 
             keyboard = [
@@ -740,6 +740,8 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                       callback_data=f"edit_task:{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
+
+            logging.debug(f"Final updated_text: {repr(updated_text)}")
 
             await context.bot.edit_message_text(
                 chat_id=original_chat_id,
