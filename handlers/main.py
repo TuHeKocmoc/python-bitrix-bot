@@ -628,11 +628,14 @@ async def edit_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if new_deadline is None:
                 new_deadline = ""
+            else:
+                dt = datetime.fromisoformat(new_deadline)
+                new_deadline = dt.strftime("%d/%m/%Y %H:%M")
 
             new_lines = [
                 f"*Задача обновлена:* {escape_markdown(new_title, version=2)}",
                 f"*Описание:* {escape_markdown(new_description, version=2)}",
-                f"*Дедлайн:* {escape_markdown(new_deadline or "", version=2)}"
+                f"*Дедлайн:* {escape_markdown(new_deadline or "", version=2)}",
                 f"*Ответственный:* {escape_markdown(new_responsible_name, 
                                                     version=2)}"
             ]
