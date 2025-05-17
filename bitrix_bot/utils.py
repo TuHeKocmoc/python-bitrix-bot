@@ -1,5 +1,5 @@
 from telegram.ext import ContextTypes
-from db import get_user, get_url
+from .db import get_user, get_url
 from datetime import datetime
 
 

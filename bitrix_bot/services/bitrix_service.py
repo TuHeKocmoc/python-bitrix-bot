@@ -5,7 +5,7 @@ from datetime import datetime, date, timedelta
 
 from telegram.helpers import escape_markdown
 
-from utils import format_datetime
+from ..utils import format_datetime
 
 
 def create_task_in_bitrix(webhook, title, description=None, deadline=None,
