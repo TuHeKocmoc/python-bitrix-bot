@@ -62,7 +62,7 @@ def init_db():
         conn.close()
         logging.debug("Инициализация базы данных завершена.")
     except Error as e:
-        logging.error("Ошибка при инициализации БД:", e)
+        logging.error("Ошибка при инициализации БД: %s", e)
 
 
 def get_url(user_id: int):
