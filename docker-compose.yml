@@ -7,10 +7,14 @@ services:
       POSTGRES_USER: ${DB_USER:-bitrixuser}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: ${DB_NAME:-bitrixbot}
+      POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=md5 --locale=ru_RU.UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8"
+      POSTGRES_HOST_AUTH_METHOD: md5
     volumes:
       - db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
+    networks:
+      - my_network
 
   bot:
     build: .
@@ -19,6 +23,13 @@ services:
       - .env
     depends_on:
       - db
+    networks:
+      - my_network
 
 volumes:
   db-data:
+    driver: local
+
+networks:
+  my_network:
+    driver: bridge
