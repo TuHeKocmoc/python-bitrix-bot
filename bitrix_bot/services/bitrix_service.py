@@ -36,10 +36,10 @@ def create_task_in_bitrix(webhook, title, description=None, deadline=None,
             return None
         resp_data = resp.json()
         task_id = resp_data['result']['task']['id']
-        logging.debug("STATUS CODE:", resp.status_code)
-        logging.debug("RESPONSE:", resp.text)
+        logging.debug("STATUS CODE: %s", resp.status_code)
+        logging.debug("RESPONSE: %s", resp.text)
     except Exception as e:
-        logging.error("Bitrix error:", e)
+        logging.error("Bitrix error: %s", e)
         return None
 
     if checklist:
@@ -165,12 +165,15 @@ def get_user_id_from_webhook(webhook: str):
             bitrix_id_str = user_info.get("ID")
             if bitrix_id_str:
                 return int(bitrix_id_str)
-        logging.error("Bitrix error:", data.get("error"),
-                      data.get("error_description"))
+        logging.error(
+            "Bitrix error: %s, %s",
+            data.get("error"),
+            data.get("error_description"),
+        )
         return None
 
     except Exception as e:
-        logging.error("Bitrix error:", e)
+        logging.error("Bitrix error: %s", e)
         return None
 
 
@@ -208,12 +211,15 @@ def get_user_name_from_bitrix(webhook: str, user_id: int):
                 full_name = f"{first_name} {last_name}".strip()
                 return full_name or None
 
-        logging.error("Bitrix error:", data.get("error"),
-                      data.get("error_description"))
+        logging.error(
+            "Bitrix error: %s, %s",
+            data.get("error"),
+            data.get("error_description"),
+        )
         return None
 
     except Exception as e:
-        logging.error("Bitrix error:", e)
+        logging.error("Bitrix error: %s", e)
         return None
 
 
@@ -234,12 +240,12 @@ def add_checklist_to_task(webhook, task_id, checklist):
         resp = requests.post(url, json=data)
         resp_data = resp.json()
 
-        logging.debug("STATUS CODE:", resp.status_code)
-        logging.debug("RESPONSE:", resp.text)
+        logging.debug("STATUS CODE: %s", resp.status_code)
+        logging.debug("RESPONSE: %s", resp.text)
 
         return resp_data
     except Exception as e:
-        logging.debug("Bitrix error:", e)
+        logging.debug("Bitrix error: %s", e)
         return None
 
 
@@ -261,8 +267,8 @@ def get_overdue_tasks(webhook: str) -> list[dict]:
     try:
         resp = requests.post(url, json=data)
         resp_data = resp.json()
-        logging.debug("STATUS CODE:", resp.status_code)
-        logging.debug("RESPONSE:", resp.text)
+        logging.debug("STATUS CODE: %s", resp.status_code)
+        logging.debug("RESPONSE: %s", resp.text)
         if "result" in resp_data:
             result = resp_data["result"]
             if isinstance(result, list):
@@ -273,11 +279,13 @@ def get_overdue_tasks(webhook: str) -> list[dict]:
                 tasks = []
             return tasks
         else:
-            logging.error("Ошибка получения задач:",
-                          resp_data.get("error_description"))
+            logging.error(
+                "Ошибка получения задач: %s",
+                resp_data.get("error_description"),
+            )
             return []
     except Exception as e:
-        logging.error("Error fetching overdue tasks:", e)
+        logging.error("Error fetching overdue tasks: %s", e)
         return []
 
 
@@ -366,11 +374,13 @@ def get_my_projects(webhook: str) -> list[dict]:
         if "result" in resp_data:
             return resp_data["result"]
         else:
-            logging.error("Ошибка получения проектов:",
-                          resp_data.get("error_description"))
+            logging.error(
+                "Ошибка получения проектов: %s",
+                resp_data.get("error_description"),
+            )
             return []
     except Exception as e:
-        logging.error("Ошибка при запросе проектов:", e)
+        logging.error("Ошибка при запросе проектов: %s", e)
         return []
 
 
@@ -450,7 +460,7 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
             for user_info in users_list:
                 user_id_str = user_info.get("ID")
                 if user_id_str is not None:
-                    logging.debug("User ID:", user_id_str)
+                    logging.debug("User ID: %s", user_id_str)
                     return int(user_id_str)
 
         logging.error(f"Bitrix error while "
@@ -458,8 +468,10 @@ def get_user_id_by_name(webhook: str, user_name: str) -> int:
         return -1
 
     except Exception as e:
-        logging.error(f"Bitrix error "
-                      f"while searching user by name '{user_name}':", e)
+        logging.error(
+            f"Bitrix error while searching user by name '{user_name}': %s",
+            e,
+        )
         return -1
 
 
@@ -489,8 +501,10 @@ def get_project_id_by_name(webhook: str, project_name: str) -> int:
         return -1
 
     except Exception as e:
-        logging.error(f"Bitrix error while "
-                      f"searching project by name '{project_name}':", e)
+        logging.error(
+            f"Bitrix error while searching project by name '{project_name}': %s",
+            e,
+        )
         return -1
 
 
@@ -555,8 +569,8 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
     try:
         resp = requests.post(url, json=request_data)
         resp_data = resp.json()
-        logging.debug("STATUS CODE:", resp.status_code)
-        logging.debug("RESPONSE:", resp.text)
+        logging.debug("STATUS CODE: %s", resp.status_code)
+        logging.debug("RESPONSE: %s", resp.text)
 
         if "result" in resp_data:
             result = resp_data["result"]
@@ -568,11 +582,13 @@ def get_tasks_filtered(webhook: str, query=None) -> list[dict]:
                 tasks = []
             return tasks
         else:
-            logging.error("Ошибка получения задач:",
-                          resp_data.get("error_description"))
-            return []
+            logging.error(
+                "Ошибка получения задач: %s",
+                resp_data.get("error_description"),
+            )
+        return []
     except Exception as e:
-        logging.error("Error fetching tasks:", e)
+        logging.error("Error fetching tasks: %s", e)
         return []
 
 
