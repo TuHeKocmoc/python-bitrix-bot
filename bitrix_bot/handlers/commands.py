@@ -1,0 +1,252 @@
+from datetime import datetime, timedelta
+import asyncio
+import logging
+
+from telegram import Update, User
+from telegram.ext import ContextTypes
+from telegram.constants import ParseMode
+
+from ..db import (
+    add_user, set_url, get_url, get_user, set_user_bitrix_id,
+    set_user_chat_id, set_main_chat_id, get_sprint_for_chat, create_sprint
+)
+from ..services.bitrix_service import (
+    get_overdue_tasks_report,
+    get_completed_tasks_report,
+    get_tasks_filtered_report,
+)
+from ..utils import get_url_by_type
+
+
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.debug("start_handler called")
+    telegram_user: User = update.effective_user
+    telegram_id = telegram_user.id
+    username = (telegram_user.username or telegram_user.first_name or telegram_id)
+    try:
+        row = get_url(telegram_id)
+        if row:
+            bitrix_url = row[0]
+            if bitrix_url:
+                await update.message.reply_text(
+                    f"Привет, {username}! Вы уже зарегистрированы. "
+                    f"/info — чтобы увидеть инфо."
+                )
+            else:
+                await update.message.reply_text(
+                    f"Привет, {username}! /url -- задать Bitrix Webhook, "
+                    f"/bitrixid -- задать свой ID в системе"
+                )
+        else:
+            await update.message.reply_text(
+                f"Привет, {username}! /url -- задать Bitrix Webhook, "
+                f"/bitrixid -- задать свой ID в системе"
+            )
+            add_user(telegram_id, username)
+    except Exception as e:
+        logging.error(f"Ошибка в /start: {e}")
+        await update.message.reply_text(
+            "Произошла ошибка при доступе к БД. Попробуйте позже."
+        )
+
+
+async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_id = update.effective_user.id
+    telegram_user: User = update.effective_user
+    username = (telegram_user.username or telegram_user.first_name or telegram_id)
+    try:
+        user_row = get_user(telegram_id)
+        if not user_row:
+            add_user(telegram_id, username)
+            user_row = get_user(telegram_id)
+
+        is_enabled = user_row[1]
+        bitrix_url = user_row[2] or "—"
+        bitrix_id = user_row[3] or "—"
+
+        info_text = (f"**Информация о пользователе**\n"
+                     f"• Включен ли: {bool(is_enabled)}\n"
+                     f"• Bitrix URL: {bitrix_url}\n"
+                     f"• Bitrix ID: {bitrix_id}\n")
+
+        await update.message.reply_text(info_text, parse_mode="Markdown")
+    except Exception as e:
+        logging.error(f"Ошибка в /info: {e}")
+        await update.message.reply_text("Произошла ошибка при получении "
+                                        "информации.")
+
+
+async def url_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message_text = update.message.text.split(None, 1)
+    telegram_id = update.effective_user.id
+    telegram_user: User = update.effective_user
+    username = (telegram_user.username or telegram_user.first_name or telegram_id)
+
+    if len(message_text) < 2:
+        await update.message.reply_text("Использование: /url <Bitrix URL>")
+        return
+
+    bitrix_url = message_text[1].strip()
+    user_row = get_user(telegram_id)
+    if not user_row:
+        add_user(telegram_id, username)
+
+    try:
+        set_url(telegram_id, bitrix_url)
+        await update.message.reply_text(f"Bitrix URL сохранён: {bitrix_url}")
+    except Exception as e:
+        logging.error(f"Ошибка сохранения Bitrix URL: {e}")
+        await update.message.reply_text("Ошибка при сохранении URL. "
+                                        "Попробуйте позже.")
+
+
+async def bitrixid_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message_text = update.message.text.split(None, 1)
+    telegram_id = update.effective_user.id
+    telegram_user: User = update.effective_user
+    username = (telegram_user.username or telegram_user.first_name or telegram_id)
+
+    if len(message_text) < 2:
+        await update.message.reply_text("Использование: /bitrixid <числовой ID>")
+        return
+
+    bitrix_id_str = message_text[1].strip()
+    try:
+        new_id = int(bitrix_id_str)
+    except ValueError:
+        await update.message.reply_text("Bitrix ID должен быть числом.")
+        return
+
+    user_row = get_user(telegram_id)
+    if not user_row:
+        add_user(telegram_id, username)
+
+    try:
+        set_user_bitrix_id(telegram_id, new_id)
+        await update.message.reply_text(f"Bitrix ID сохранён: {new_id}")
+    except Exception as e:
+        logging.error(f"Ошибка сохранения Bitrix ID: {e}")
+        await update.message.reply_text("Ошибка при сохранении. Попробуйте "
+                                        "позже.")
+
+
+async def notifications_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    telegram_user: User = update.effective_user
+    username = (telegram_user.username or telegram_user.first_name or telegram_id)
+
+    user_row = get_user(telegram_id)
+    if not user_row:
+        add_user(telegram_id, username)
+
+    try:
+        set_user_chat_id(telegram_id, chat_id)
+        await update.message.reply_text(
+            f"Ваш ID беседы (chat_id) сохранён: {chat_id}. "
+            f"Теперь я буду писать уведомления в этой беседе."
+        )
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении chat_id для {telegram_id}: {e}")
+        await update.message.reply_text("Ошибка при сохранении ID беседы. "
+                                        "Попробуйте позже.")
+
+
+async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного Bitrix URL для "
+                                        "этой беседы.")
+        return
+
+    report_text = get_overdue_tasks_report(bitrix_url)
+    await update.message.reply_text(report_text, parse_mode="Markdown")
+
+
+async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_user: User = update.effective_user
+    telegram_id = telegram_user.id
+    chat_id = update.effective_chat.id
+
+    user_row = get_user(telegram_id)
+    if not user_row:
+        username = (telegram_user.username or telegram_user.first_name or str(telegram_id))
+        add_user(telegram_id, username)
+
+    try:
+        set_main_chat_id(telegram_id, chat_id)
+        await update.message.reply_text(f"Основная беседа установлена. ("
+                                        f"main_chat_id = {chat_id})")
+    except Exception as e:
+        logging.error(f"Ошибка при установке main_chat_id для {telegram_id}: {e}")
+        await update.message.reply_text("Ошибка при сохранении основной "
+                                        "беседы. Попробуйте позже.")
+
+
+async def report_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного Bitrix URL для "
+                                        "этой беседы.")
+        return
+
+    now = datetime.now()
+    one_week_ago = now - timedelta(days=7)
+    start_date = one_week_ago.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+    end_date = now.strftime("%Y-%m-%dT%H:%M:%S+03:00")
+
+    report_text = await asyncio.to_thread(get_completed_tasks_report,
+                                          bitrix_url, start_date, end_date)
+    await update.message.reply_text(report_text)
+
+
+async def tasks_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+
+    if not bitrix_url:
+        await update.message.reply_text("Нет настроенного Bitrix URL для "
+                                        "этой беседы.")
+        return
+
+    text = update.message.text.strip()
+    parts = text.split(maxsplit=1)
+
+    query = None
+    if len(parts) > 1:
+        possible_filter = parts[1].strip()
+        try:
+            query = int(possible_filter)
+        except ValueError:
+            query = possible_filter
+
+    report_text = get_tasks_filtered_report(bitrix_url, query)
+    await update.message.reply_text(report_text,
+                                    parse_mode=ParseMode.MARKDOWN_V2)
+
+
+async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    current_sprint = get_sprint_for_chat(chat_id)
+
+    if current_sprint and current_sprint["is_active"] == 1:
+        await update.message.reply_text(
+            "Уже запущен спринт в этом чате! "
+            "Можете завершить или дождаться дедлайна."
+        )
+        return
+
+    sprint_id = create_sprint(chat_id)
+
+    await update.message.reply_text(
+        f"В этом чате подготовлен спринт (ID={sprint_id}).\n"
+        "Укажите дедлайн командой `/set_sprint_deadline 2025-05-20 18:00` "
+        "или сразу `/startsprint 2025-05-20 18:00`."
+    )

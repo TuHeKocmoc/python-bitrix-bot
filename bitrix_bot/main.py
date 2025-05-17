@@ -17,13 +17,20 @@ from .config import BOT_TOKEN
 from .db import (init_db, get_users_for_weekly_report,
                  get_users_for_daily_report)
 from .handlers.admin import admin_command_handler, ainfo_command_handler
-from .handlers.main import (start_handler, text_message_handler,
-                            info_command_handler, url_command_handler,
-                            bitrixid_command_handler, delay_command_handler,
-                            notifications_command_handler,
-                            main_command_handler, report_command_handler,
-                            tasks_command_handler, edit_task_conv_handler,
-                            sprint_command_handler)
+from .handlers.commands import (
+    start_handler,
+    info_command_handler,
+    url_command_handler,
+    bitrixid_command_handler,
+    delay_command_handler,
+    notifications_command_handler,
+    main_command_handler,
+    report_command_handler,
+    tasks_command_handler,
+    sprint_command_handler,
+)
+from .handlers.messages import text_message_handler
+from .handlers.edit_task import edit_task_conv_handler
 import asyncio
 from apscheduler import Scheduler
 
