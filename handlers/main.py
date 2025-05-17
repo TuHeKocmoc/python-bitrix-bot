@@ -21,7 +21,8 @@ from bitrix_service import (
 )
 from db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
-    get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id
+    get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id,
+    get_sprint_for_chat, create_sprint
 )
 import logging
 import asyncio
@@ -1246,3 +1247,24 @@ edit_task_conv_handler = ConversationHandler(
         CommandHandler("cancel", cancel_edit)
     ]
 )
+
+
+async def sprint_command_handler(update: Update,
+                                 context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    current_sprint = get_sprint_for_chat(chat_id)
+
+    if current_sprint and current_sprint["is_active"] == 1:
+        await update.message.reply_text(
+            "Уже запущен спринт в этом чате! "
+            "Можете завершить или дождаться дедлайна."
+        )
+        return
+
+    sprint_id = create_sprint(chat_id)
+
+    await update.message.reply_text(
+        f"В этом чате подготовлен спринт (ID={sprint_id}).\n"
+        "Укажите дедлайн командой `/set_sprint_deadline 2025-05-20 18:00` "
+        "или сразу `/startsprint 2025-05-20 18:00`."
+    )

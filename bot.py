@@ -20,7 +20,8 @@ from handlers.main import (start_handler, text_message_handler,
                            bitrixid_command_handler, delay_command_handler,
                            notifications_command_handler,
                            main_command_handler, report_command_handler,
-                           tasks_command_handler, edit_task_conv_handler)
+                           tasks_command_handler, edit_task_conv_handler,
+                           sprint_command_handler)
 import asyncio
 from apscheduler import Scheduler
 
@@ -96,6 +97,7 @@ def main():
     application.add_handler(CommandHandler("main", main_command_handler))
     application.add_handler(CommandHandler("report", report_command_handler))
     application.add_handler(CommandHandler("tasks", tasks_command_handler))
+    application.add_handler(CommandHandler("sprint", sprint_command_handler))
 
     application.add_handler(edit_task_conv_handler)
 
