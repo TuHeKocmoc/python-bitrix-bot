@@ -1,12 +1,13 @@
 import logging
 
-import mysql.connector
-from mysql.connector import Error
+import psycopg2
+from psycopg2 import Error
+from psycopg2.extras import RealDictCursor
 from .config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
 
 
 def get_connection():
-    return mysql.connector.connect(
+    return psycopg2.connect(
         host=DB_HOST,
         user=DB_USER,
         password=DB_PASSWORD,
@@ -21,33 +22,32 @@ def init_db():
         cursor = conn.cursor()
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
           telegram_id BIGINT NOT NULL,
           username VARCHAR(255),
-          bitrix_url VARCHAR(255) DEFAULT NULL,
-          bitrix_id BIGINT DEFAULT NULL,
-          is_enabled TINYINT DEFAULT 0,
-          chat_id BIGINT DEFAULT NULL,
-          main_chat_id BIGINT DEFAULT NULL,
+          bitrix_url VARCHAR(255),
+          bitrix_id BIGINT,
+          is_enabled BOOLEAN DEFAULT FALSE,
+          chat_id BIGINT,
+          main_chat_id BIGINT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS sprints (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
           chat_id BIGINT NOT NULL,
-          deadline DATETIME NULL,
-          is_active TINYINT DEFAULT 0,
+          deadline TIMESTAMP NULL,
+          is_active BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-            ON UPDATE CURRENT_TIMESTAMP
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
 
         cursor.execute("""
                        CREATE TABLE IF NOT EXISTS sprint_tasks
                        (
-                           id             INT AUTO_INCREMENT PRIMARY KEY,
+                           id             SERIAL PRIMARY KEY,
                            sprint_id      INT    NOT NULL,
                            bitrix_task_id BIGINT NOT NULL,
                            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -269,7 +269,7 @@ def get_sprint_for_chat(chat_id: int):
     если нужно — можно проверять is_active или нет
     """
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("""
         SELECT * 
         FROM sprints
@@ -289,11 +289,15 @@ def create_sprint(chat_id: int):
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO sprints (chat_id, deadline, is_active)
         VALUES (%s, NULL, 0)
-    """, (chat_id,))
-    new_id = cursor.lastrowid
+        RETURNING id
+        """,
+        (chat_id,)
+    )
+    new_id = cursor.fetchone()[0]
     conn.commit()
     cursor.close()
     conn.close()
