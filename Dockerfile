@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y g++
 COPY requirements.txt ./
-RUN pip install --no-cache-dir --no-deps -r requirements.txt --verbose
+RUN pip install --no-cache-dir -r requirements.txt --verbose
 
 COPY . .
 
