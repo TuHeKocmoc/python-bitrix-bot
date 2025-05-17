@@ -3,7 +3,7 @@ import logging
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 import json
-from config import OPENAI_API_KEY
+from ..config import OPENAI_API_KEY
 from datetime import datetime
 
 client = OpenAI(api_key=OPENAI_API_KEY)

@@ -1,5 +1,5 @@
 from tinkoff_voicekit_client import ClientSTT
-from config import TINKOFF_API_KEY, TINKOFF_SECRET_KEY
+from ..config import TINKOFF_API_KEY, TINKOFF_SECRET_KEY
 import logging
 
 stt_client = ClientSTT(TINKOFF_API_KEY, TINKOFF_SECRET_KEY)

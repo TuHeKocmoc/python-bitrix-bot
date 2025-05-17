@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import ADMIN_IDS
-from db import enable_user, disable_user, get_user_by_username
+from ..config import ADMIN_IDS
+from ..db import enable_user, disable_user, get_user_by_username
 import logging
 
 

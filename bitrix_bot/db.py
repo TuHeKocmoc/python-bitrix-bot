@@ -2,7 +2,7 @@ import logging
 
 import mysql.connector
 from mysql.connector import Error
-from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
+from .config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
 
 
 def get_connection():
@@ -43,6 +43,20 @@ def init_db():
             ON UPDATE CURRENT_TIMESTAMP
         );
         """)
+
+        cursor.execute("""
+                       CREATE TABLE IF NOT EXISTS sprint_tasks
+                       (
+                           id             INT AUTO_INCREMENT PRIMARY KEY,
+                           sprint_id      INT    NOT NULL,
+                           bitrix_task_id BIGINT NOT NULL,
+                           created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           FOREIGN KEY (sprint_id) REFERENCES sprints (id)
+                               ON DELETE CASCADE
+                               ON UPDATE CASCADE
+                       );
+                       """)
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -248,3 +262,39 @@ def get_users_for_weekly_report() -> list[tuple]:
     cursor.close()
     conn.close()
     return rows
+
+def get_sprint_for_chat(chat_id: int):
+    """
+    Возвращает запись из sprints для данного чата,
+    если нужно — можно проверять is_active или нет
+    """
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT * 
+        FROM sprints
+        WHERE chat_id = %s
+        ORDER BY id DESC 
+        LIMIT 1
+    """, (chat_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row
+
+def create_sprint(chat_id: int):
+    """
+    Создаёт новый спринт в состоянии "is_active=0" (подготовка),
+    deadline=NULL. Возвращает ID созданного спринта.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO sprints (chat_id, deadline, is_active)
+        VALUES (%s, NULL, 0)
+    """, (chat_id,))
+    new_id = cursor.lastrowid
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return new_id
