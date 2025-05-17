@@ -1,12 +1,10 @@
-FROM python:3.11-slim
+FROM python:3.14.0b1-slim
 
 WORKDIR /app
 
-# Install dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY . .
 
 CMD ["python", "-m", "bitrix_bot"]
