@@ -1,10 +1,10 @@
-FROM python:3.14.0b1-slim
+FROM python:3.13.3-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y g++
+RUN apt-get update && apt-get install -y g++ libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt ./
-RUN pip install --no-cache-dir --no-deps -r requirements.txt --verbose
+RUN pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt --verbose
 
 COPY . .
 
