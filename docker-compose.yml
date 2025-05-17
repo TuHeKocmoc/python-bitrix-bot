@@ -17,8 +17,7 @@ services:
       - my_network
 
   bot:
-    build: .
-    command: python -m bitrix_bot
+    image: ghcr.io/tuhekocmoc/bitrix:1.0.36
     env_file:
       - .env
     depends_on:
