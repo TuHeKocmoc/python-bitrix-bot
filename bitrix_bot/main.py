@@ -1,4 +1,4 @@
-import log
+from . import log
 from datetime import datetime, timedelta
 
 import logging
@@ -11,17 +11,19 @@ from telegram.ext import (
     filters, ContextTypes
 )
 
-from bitrix_service import get_completed_tasks_report, get_overdue_tasks_report
-from config import BOT_TOKEN
-from db import init_db, get_users_for_weekly_report, get_users_for_daily_report
-from handlers.admin import admin_command_handler, ainfo_command_handler
-from handlers.main import (start_handler, text_message_handler,
-                           info_command_handler, url_command_handler,
-                           bitrixid_command_handler, delay_command_handler,
-                           notifications_command_handler,
-                           main_command_handler, report_command_handler,
-                           tasks_command_handler, edit_task_conv_handler,
-                           sprint_command_handler)
+from .services.bitrix_service import (get_completed_tasks_report,
+                                      get_overdue_tasks_report)
+from .config import BOT_TOKEN
+from .db import (init_db, get_users_for_weekly_report,
+                 get_users_for_daily_report)
+from .handlers.admin import admin_command_handler, ainfo_command_handler
+from .handlers.main import (start_handler, text_message_handler,
+                            info_command_handler, url_command_handler,
+                            bitrixid_command_handler, delay_command_handler,
+                            notifications_command_handler,
+                            main_command_handler, report_command_handler,
+                            tasks_command_handler, edit_task_conv_handler,
+                            sprint_command_handler)
 import asyncio
 from apscheduler import Scheduler
 

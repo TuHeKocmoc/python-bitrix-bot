@@ -10,8 +10,8 @@ from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
 from telegram.error import BadRequest
 
-from openai_service import parse_message_with_openai
-from bitrix_service import (
+from ..services.openai_service import parse_message_with_openai
+from ..services.bitrix_service import (
     create_task_in_bitrix, get_user_id_from_webhook, get_overdue_tasks_report,
     get_my_projects, get_completed_tasks_report, get_user_name_from_bitrix,
     get_tasks_filtered_report, update_task_in_bitrix,
@@ -19,7 +19,7 @@ from bitrix_service import (
     get_project_name_by_id, add_checklist_item, delete_checklist_item,
     get_checklist_items
 )
-from db import (
+from ..db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
     get_bitrix_id_for_user, set_user_chat_id, set_main_chat_id,
     get_sprint_for_chat, create_sprint
@@ -31,8 +31,8 @@ import os
 import uuid
 
 from pydub import AudioSegment
-from tinkoff_service import transcribe_wav_tinkoff
-from utils import (
+from ..services.tinkoff_service import transcribe_wav_tinkoff
+from ..utils import (
     extract_mention_username, get_url_by_type, get_uinfo_from_admins
 )
 
@@ -1159,24 +1159,19 @@ async def checklist_del_item_callback(update: Update,
                         checklist_lines.append(f"{i}. {prefix} {t}")
 
                 lines = [
-                    f"*Задача обновлена:* {escape_markdown(new_title, 
-                                                           version=2)}"
+                    f"*Задача обновлена:* {escape_markdown(new_title, version=2)}"
                 ]
                 if new_description:
                     lines.append(
-                        f"*Описание:* {escape_markdown(new_description, 
-                                                       version=2)}")
+                        f"*Описание:* {escape_markdown(new_description, version=2)}")
                 if new_deadline:
                     lines.append(
-                        f"*Дедлайн:* {escape_markdown(new_deadline, 
-                                                      version=2)}")
+                        f"*Дедлайн:* {escape_markdown(new_deadline, version=2)}")
                 if project_name:
                     lines.append(
-                        f"*Проект:* {escape_markdown(project_name, 
-                                                     version=2)}")
+                        f"*Проект:* {escape_markdown(project_name, version=2)}")
                 lines.append(
-                    f"*Ответственный:* {escape_markdown(responsible_name, 
-                                                        version=2)}")
+                    f"*Ответственный:* {escape_markdown(responsible_name, version=2)}")
 
                 if accomplices_names:
                     joined_accomp = ", ".join(
