@@ -17,7 +17,7 @@ services:
       - my_network
 
   bot:
-    image: ghcr.io/tuhekocmoc/bitrix:1.0.36
+    image: ghcr.io/tuhekocmoc/bitrix:1.0.0
     env_file:
       - .env
     depends_on:
