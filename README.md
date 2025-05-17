@@ -79,4 +79,6 @@ python -m bitrix_bot
 docker compose up --build
 ```
 
-Это поднимет контейнер с PostgreSQL и контейнер с ботом.
+Команда соберёт образ бота и образ базы данных на основе `Dockerfile.postgres`,
+где заранее генерируется локаль `ru_RU.UTF-8`. В итоге будут запущены контейнеры
+с PostgreSQL и ботом.
