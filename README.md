@@ -71,3 +71,12 @@
 ```bash
 python -m bitrix_bot
 ```
+
+## Docker
+Чтобы запустить бота и базу данных в Docker, скопируйте `.env.example` в `.env` и заполните значения. Затем выполните:
+
+```bash
+docker compose up --build
+```
+
+Это поднимет контейнер с PostgreSQL и контейнер с ботом.
