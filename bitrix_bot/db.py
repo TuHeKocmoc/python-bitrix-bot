@@ -143,7 +143,7 @@ def enable_user(username: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE users SET is_enabled=1 WHERE username=%s",
+        "UPDATE users SET is_enabled=TRUE WHERE username=%s",
         (username,)
     )
     conn.commit()
@@ -155,7 +155,7 @@ def disable_user(username: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE users SET is_enabled=0 WHERE username=%s",
+        "UPDATE users SET is_enabled=FALSE WHERE username=%s",
         (username,)
     )
     conn.commit()
