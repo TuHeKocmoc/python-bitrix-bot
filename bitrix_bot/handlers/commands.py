@@ -8,12 +8,14 @@ from telegram.constants import ParseMode
 
 from ..db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
-    set_user_chat_id, set_main_chat_id, get_sprint_for_chat, create_sprint
+    set_user_chat_id, set_main_chat_id, get_sprint_for_chat, create_sprint,
+    set_sprint_deadline, start_sprint, get_sprint_tasks, finish_sprint
 )
 from ..services.bitrix_service import (
     get_overdue_tasks_report,
     get_completed_tasks_report,
     get_tasks_filtered_report,
+    get_task_fields_from_bitrix,
 )
 from ..utils import get_url_by_type
 
@@ -250,3 +252,104 @@ async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_T
         "Укажите дедлайн командой `/set_sprint_deadline 2025-05-20 18:00` "
         "или сразу `/startsprint 2025-05-20 18:00`."
     )
+
+
+async def set_sprint_deadline_handler(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    current_sprint = get_sprint_for_chat(chat_id)
+    if not current_sprint:
+        await update.message.reply_text(
+            "Сначала создайте спринт командой /sprint")
+        return
+
+    text = update.message.text.split(maxsplit=1)
+    if len(text) < 2:
+        await update.message.reply_text(
+            "Укажите дату в формате YYYY-MM-DD HH:MM")
+        return
+
+    try:
+        deadline = datetime.strptime(text[1], "%Y-%m-%d %H:%M")
+    except ValueError:
+        await update.message.reply_text(
+            "Неверный формат даты. Пример: 2025-05-20 18:00")
+        return
+
+    set_sprint_deadline(current_sprint["id"], deadline)
+    await update.message.reply_text(
+        f"Дедлайн спринта установлен: {deadline}")
+
+
+async def startsprint_command_handler(update: Update,
+                                      context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    current_sprint = get_sprint_for_chat(chat_id)
+    if not current_sprint:
+        await update.message.reply_text(
+            "Сначала создайте спринт командой /sprint")
+        return
+
+    text = update.message.text.split(maxsplit=1)
+    deadline = None
+    if len(text) > 1:
+        try:
+            deadline = datetime.strptime(text[1], "%Y-%m-%d %H:%M")
+        except ValueError:
+            await update.message.reply_text(
+                "Неверный формат даты. Пример: 2025-05-20 18:00")
+            return
+    elif not current_sprint["deadline"]:
+        await update.message.reply_text(
+            "Сначала задайте дедлайн командой /set_sprint_deadline")
+        return
+
+    start_sprint(current_sprint["id"], deadline)
+    dl = deadline or current_sprint["deadline"]
+    await update.message.reply_text(
+        f"Спринт запущен! Дедлайн: {dl}")
+
+
+async def check_command_handler(update: Update,
+                                context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    sprint = get_sprint_for_chat(chat_id)
+    if not sprint or sprint["is_active"] == 0:
+        await update.message.reply_text(
+            "Нет активного спринта в этом чате.")
+        return
+
+    task_ids = get_sprint_tasks(sprint["id"])
+    if not task_ids:
+        await update.message.reply_text("В спринте нет задач.")
+        return
+
+    bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+    if not bitrix_url:
+        await update.message.reply_text("Не найден Bitrix URL для этого чата.")
+        return
+
+    lines = []
+    completed = 0
+    for t_id in task_ids:
+        fields = get_task_fields_from_bitrix(bitrix_url, t_id)
+        title = fields.get("TITLE", "Без названия")
+        status = fields.get("REAL_STATUS")
+        closed = fields.get("CLOSED_DATE")
+        is_done = bool(closed) or (status and int(status) >= 5)
+        if is_done:
+            completed += 1
+        lines.append(f"{t_id}: {title} - {'✅' if is_done else '❌'}")
+
+    percent = int(completed / len(task_ids) * 100)
+    if sprint["deadline"]:
+        remaining = sprint["deadline"] - datetime.now()
+        remaining_str = str(remaining).split(".")[0]
+    else:
+        remaining_str = "-"
+
+    header = (f"Всего задач: {len(task_ids)}, выполнено: {completed} "
+              f"({percent}%). До дедлайна: {remaining_str}")
+    report = "\n".join(lines)
+    await update.message.reply_text(header + "\n" + report)
