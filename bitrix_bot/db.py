@@ -66,15 +66,20 @@ def init_db():
         logging.error("Ошибка при инициализации БД: %s", e)
 
 
-def get_url(user_id: int):
+def get_url(user_id: int) -> str | None:
+    """Return Bitrix webhook URL for a Telegram user ID."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT bitrix_url FROM users "
-                   "WHERE telegram_id = %s", (user_id,))
+    cursor.execute(
+        "SELECT bitrix_url FROM users WHERE telegram_id = %s",
+        (user_id,),
+    )
     row = cursor.fetchone()
     cursor.close()
     conn.close()
-    return row[0]
+    if row:
+        return row[0]
+    return None
 
 
 def add_user(user_id: int, username: str):

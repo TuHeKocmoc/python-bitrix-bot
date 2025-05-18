@@ -29,19 +29,12 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = telegram_user.id
     username = (telegram_user.username or telegram_user.first_name or telegram_id)
     try:
-        row = get_url(telegram_id)
-        if row:
-            bitrix_url = row[0]
-            if bitrix_url:
-                await update.message.reply_text(
-                    f"Привет, {username}! Вы уже зарегистрированы. "
-                    f"/info — чтобы увидеть инфо."
-                )
-            else:
-                await update.message.reply_text(
-                    f"Привет, {username}! /url -- задать Bitrix Webhook, "
-                    f"/bitrixid -- задать свой ID в системе"
-                )
+        bitrix_url = get_url(telegram_id)
+        if bitrix_url is not None:
+            await update.message.reply_text(
+                f"Привет, {username}! Вы уже зарегистрированы. "
+                f"/info — чтобы увидеть инфо."
+            )
         else:
             await update.message.reply_text(
                 f"Привет, {username}! /url -- задать Bitrix Webhook, "
