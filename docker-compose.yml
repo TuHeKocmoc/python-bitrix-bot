@@ -1,5 +1,6 @@
 services:
   db:
+    container_name: db
     build:
       context: .
       dockerfile: Dockerfile.postgres
@@ -19,6 +20,7 @@ services:
 
 
   bot:
+    container_name: app
     image: ghcr.io/tuhekocmoc/bitrix:1.0.1
     env_file:
       - .env
