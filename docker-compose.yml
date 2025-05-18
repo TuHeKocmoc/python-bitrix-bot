@@ -29,18 +29,18 @@ services:
     restart: unless-stopped
 
 
-  postgres-exporter:
+  postgres_exporter:
     image: wrouesnel/postgres_exporter
     container_name: postgres_exporter
     environment:
-      DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
     depends_on:
       - db
     networks:
       - my_network
     restart: unless-stopped
 
-  node-exporter:
+  node_exporter:
     image: prom/node-exporter:latest
     container_name: node_exporter
     network_mode: host
