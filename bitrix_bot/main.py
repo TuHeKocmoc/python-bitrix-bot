@@ -11,11 +11,17 @@ from telegram.ext import (
     filters, ContextTypes
 )
 
-from .services.bitrix_service import (get_completed_tasks_report,
-                                      get_overdue_tasks_report)
+from .services.bitrix_service import (
+    get_completed_tasks_report,
+    get_overdue_tasks_report,
+    get_task_fields_from_bitrix,
+)
 from .config import BOT_TOKEN
-from .db import (init_db, get_users_for_weekly_report,
-                 get_users_for_daily_report)
+from .db import (
+    init_db, get_users_for_weekly_report,
+    get_users_for_daily_report, get_active_sprints,
+    get_sprint_tasks, finish_sprint, get_user
+)
 from .handlers.admin import admin_command_handler, ainfo_command_handler
 from .handlers.commands import (
     start_handler,
@@ -28,6 +34,9 @@ from .handlers.commands import (
     report_command_handler,
     tasks_command_handler,
     sprint_command_handler,
+    set_sprint_deadline_handler,
+    startsprint_command_handler,
+    check_command_handler,
 )
 from .handlers.messages import text_message_handler
 from .handlers.edit_task import edit_task_conv_handler
@@ -88,6 +97,50 @@ def weekly_report_job_wrapper(application):
     asyncio.run(weekly_report_job(application))
 
 
+async def check_sprints_job(application):
+    active = get_active_sprints()
+    if not active:
+        return
+
+    for sprint in active:
+        deadline = sprint.get("deadline")
+        if deadline and deadline <= datetime.now():
+            chat_id = sprint["chat_id"]
+
+            # опред. bitrix url через админов
+            admins = await application.bot.get_chat_administrators(chat_id)
+            bitrix_url = None
+            for adm in admins:
+                row = get_user(adm.user.id)
+                if row and row[1] and row[2]:
+                    bitrix_url = row[2]
+                    break
+
+            task_ids = get_sprint_tasks(sprint["id"])
+            lines = []
+            completed = 0
+            if bitrix_url:
+                for t_id in task_ids:
+                    fields = get_task_fields_from_bitrix(bitrix_url, t_id)
+                    title = fields.get("TITLE", "Без названия")
+                    status = fields.get("REAL_STATUS")
+                    closed = fields.get("CLOSED_DATE")
+                    done = bool(closed) or (status and int(status) >= 5)
+                    if done:
+                        completed += 1
+                    lines.append(f"{t_id}: {title} - {'✅' if done else '❌'}")
+
+            percent = int(completed / len(task_ids) * 100) if task_ids else 0
+            summary = (
+                f"Спринт завершен! Выполнено {completed} из {len(task_ids)} "
+                f"({percent}%)."
+            )
+            report = "\n".join(lines)
+            await application.bot.send_message(chat_id=chat_id,
+                                               text=summary + "\n" + report)
+            finish_sprint(sprint["id"])
+
+
 def main():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -107,6 +160,12 @@ def main():
     application.add_handler(CommandHandler("report", report_command_handler))
     application.add_handler(CommandHandler("tasks", tasks_command_handler))
     application.add_handler(CommandHandler("sprint", sprint_command_handler))
+    application.add_handler(CommandHandler("set_sprint_deadline",
+                                             set_sprint_deadline_handler))
+    application.add_handler(CommandHandler("startsprint",
+                                             startsprint_command_handler))
+    application.add_handler(CommandHandler("check",
+                                             check_command_handler))
 
     application.add_handler(edit_task_conv_handler)
 
@@ -121,6 +180,7 @@ def main():
     with Scheduler() as scheduler:
         daily_trigger = CronTrigger(hour=10, minute=0)
         weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
+        sprint_trigger = CronTrigger(minute="*")
 
         scheduler.add_schedule(
             delay_command_handler_daily_all,
@@ -134,6 +194,12 @@ def main():
             weekly_trigger,
             args=[application],
             id='weekly_task'
+        )
+        scheduler.add_schedule(
+            check_sprints_job,
+            sprint_trigger,
+            args=[application],
+            id='sprint_task'
         )
         scheduler.start_in_background()
 

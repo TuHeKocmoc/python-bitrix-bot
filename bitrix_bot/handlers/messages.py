@@ -17,7 +17,11 @@ from ..services.bitrix_service import (
     get_user_name_from_bitrix,
 )
 from ..services.tinkoff_service import transcribe_wav_tinkoff
-from ..db import get_bitrix_id_for_user
+from ..db import (
+    get_bitrix_id_for_user,
+    get_sprint_for_chat,
+    add_task_to_sprint,
+)
 from ..utils import extract_mention_username, get_uinfo_from_admins
 
 
@@ -145,6 +149,10 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if result:
         await update.message.reply_text("Задача поставлена!")
         task_id = int(result['result']['task']['id'])
+
+        sprint = get_sprint_for_chat(chat_id)
+        if sprint and sprint.get("is_active") == 1:
+            add_task_to_sprint(sprint["id"], task_id)
     else:
         task_id = 0
 
