@@ -25,8 +25,66 @@ services:
     networks:
       - my_network
 
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    env_file:
+      - .env
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}?sslmode=disable"
+    depends_on:
+      - db
+    networks:
+      - my_network
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    pid: host
+    networks:
+      - my_network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - my_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres-exporter
+      - node-exporter
+      - cadvisor
+    networks:
+      - my_network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - my_network
+
 volumes:
   db-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
     driver: local
 
 networks:

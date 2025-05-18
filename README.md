@@ -93,3 +93,12 @@ docker compose up --build
 с PostgreSQL и ботом.
 Все логи пишутся в стандартный вывод контейнера, их можно посмотреть командой
 `docker compose logs`.
+
+## Мониторинг
+
+В `docker-compose.yml` также присутствуют сервисы **Prometheus**, **Grafana**,
+**cAdvisor**, **node_exporter** и **postgres_exporter**. После запуска контейнеров
+метрики доступны в Prometheus (`http://localhost:9090`), а Grafana открывается по
+адресу `http://localhost:3000` (по умолчанию логин и пароль `admin`). В Grafana
+нужно добавить источник данных Prometheus `http://prometheus:9090` и можно
+создавать дашборды для отслеживания состояния бота, системы и базы данных.
