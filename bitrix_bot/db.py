@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import psycopg2
 from psycopg2 import Error
@@ -302,3 +303,90 @@ def create_sprint(chat_id: int):
     cursor.close()
     conn.close()
     return new_id
+
+
+def set_sprint_deadline(sprint_id: int, deadline: datetime):
+    """Устанавливает дедлайн для спринта."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sprints SET deadline=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+        (deadline, sprint_id),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def start_sprint(sprint_id: int, deadline: datetime | None = None):
+    """Переводит спринт в активный статус."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if deadline is not None:
+        cursor.execute(
+            """
+            UPDATE sprints
+            SET deadline=%s, is_active=1, updated_at=CURRENT_TIMESTAMP
+            WHERE id=%s
+            """,
+            (deadline, sprint_id),
+        )
+    else:
+        cursor.execute(
+            "UPDATE sprints SET is_active=1, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+            (sprint_id,),
+        )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def finish_sprint(sprint_id: int):
+    """Завершает спринт (is_active=0)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sprints SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+        (sprint_id,),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def add_task_to_sprint(sprint_id: int, bitrix_task_id: int):
+    """Добавляет задачу в спринт."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO sprint_tasks (sprint_id, bitrix_task_id) VALUES (%s, %s)",
+        (sprint_id, bitrix_task_id),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def get_sprint_tasks(sprint_id: int) -> list[int]:
+    """Возвращает ID задач спринта."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT bitrix_task_id FROM sprint_tasks WHERE sprint_id=%s",
+        (sprint_id,),
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [r[0] for r in rows]
+
+
+def get_active_sprints() -> list[dict]:
+    """Возвращает все активные спринты."""
+    conn = get_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT * FROM sprints WHERE is_active=1")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
