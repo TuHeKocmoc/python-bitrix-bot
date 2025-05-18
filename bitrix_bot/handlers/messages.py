@@ -23,6 +23,7 @@ from ..db import (
     add_task_to_sprint,
 )
 from ..utils import extract_mention_username, get_uinfo_from_admins
+from ..metrics import observe_task_created
 
 
 async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,6 +148,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         group_id=group_id
     )
     if result:
+        observe_task_created()
         await update.message.reply_text("Задача поставлена!")
         task_id = int(result['result']['task']['id'])
 

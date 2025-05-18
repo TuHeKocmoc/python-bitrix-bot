@@ -1,5 +1,6 @@
 services:
   db:
+    container_name: db
     build:
       context: .
       dockerfile: Dockerfile.postgres
@@ -19,11 +20,19 @@ services:
 
 
   bot:
+    container_name: app
     image: ghcr.io/tuhekocmoc/bitrix:1.0.1
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      - METRICS_PORT=${METRICS_PORT:-8000}
     depends_on:
       - db
+    expose:
+      - "${METRICS_PORT:-8000}"
     networks:
       - my_network
     restart: unless-stopped
