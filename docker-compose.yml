@@ -63,8 +63,6 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    depends_on:
-      - app
     expose:
       - "8080"
     volumes:
