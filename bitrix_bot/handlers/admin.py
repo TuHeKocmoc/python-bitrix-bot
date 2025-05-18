@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from ..config import ADMIN_IDS
 from ..db import enable_user, disable_user, get_user_by_username
+from ..metrics import observe_command
 import logging
 
 
@@ -14,6 +15,7 @@ async def admin_command_handler(update: Update,
 
     msg_parts = update.message.text.strip().split()
     command = msg_parts[0]
+    observe_command(command.lstrip('/'))
     if len(msg_parts) < 2:
         await update.message.reply_text("Укажите chat_id. "
                                         "Пример: /enable -100123456789")
@@ -36,6 +38,7 @@ async def ainfo_command_handler(update: Update,
                                 context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id  # telegram_id инициатора
     message_text = update.message.text.split()
+    observe_command("ainfo")
 
     if user_id not in ADMIN_IDS:
         await update.message.reply_text("У вас нет прав на эту команду.")

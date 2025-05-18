@@ -40,6 +40,7 @@ from .handlers.commands import (
 )
 from .handlers.messages import text_message_handler
 from .handlers.edit_task import edit_task_conv_handler
+from .metrics import setup_metrics
 import asyncio
 from apscheduler import Scheduler
 
@@ -142,6 +143,7 @@ async def check_sprints_job(application):
 
 
 def main():
+    setup_metrics()
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start_handler))

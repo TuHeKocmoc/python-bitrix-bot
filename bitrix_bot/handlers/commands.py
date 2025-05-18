@@ -6,6 +6,8 @@ from telegram import Update, User
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
+from ..metrics import observe_command
+
 from ..db import (
     add_user, set_url, get_url, get_user, set_user_bitrix_id,
     set_user_chat_id, set_main_chat_id, get_sprint_for_chat, create_sprint,
@@ -21,6 +23,7 @@ from ..utils import get_url_by_type
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("start")
     logging.debug("start_handler called")
     telegram_user: User = update.effective_user
     telegram_id = telegram_user.id
@@ -53,6 +56,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("info")
     telegram_id = update.effective_user.id
     telegram_user: User = update.effective_user
     username = (telegram_user.username or telegram_user.first_name or telegram_id)
@@ -79,6 +83,7 @@ async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def url_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("url")
     message_text = update.message.text.split(None, 1)
     telegram_id = update.effective_user.id
     telegram_user: User = update.effective_user
@@ -103,6 +108,7 @@ async def url_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def bitrixid_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("bitrixid")
     message_text = update.message.text.split(None, 1)
     telegram_id = update.effective_user.id
     telegram_user: User = update.effective_user
@@ -133,6 +139,7 @@ async def bitrixid_command_handler(update: Update, context: ContextTypes.DEFAULT
 
 
 async def notifications_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("notifications")
     telegram_id = update.effective_user.id
     chat_id = update.effective_chat.id
     telegram_user: User = update.effective_user
@@ -155,6 +162,7 @@ async def notifications_command_handler(update: Update, context: ContextTypes.DE
 
 
 async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("delay")
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     bitrix_url = await get_url_by_type(chat_id, chat_type, context)
@@ -169,6 +177,7 @@ async def delay_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("main")
     telegram_user: User = update.effective_user
     telegram_id = telegram_user.id
     chat_id = update.effective_chat.id
@@ -189,6 +198,7 @@ async def main_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def report_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("report")
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     bitrix_url = await get_url_by_type(chat_id, chat_type, context)
@@ -209,6 +219,7 @@ async def report_command_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def tasks_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("tasks")
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     bitrix_url = await get_url_by_type(chat_id, chat_type, context)
@@ -235,6 +246,7 @@ async def tasks_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    observe_command("sprint")
     chat_id = update.effective_chat.id
     current_sprint = get_sprint_for_chat(chat_id)
 
@@ -256,6 +268,7 @@ async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 async def set_sprint_deadline_handler(update: Update,
                                       context: ContextTypes.DEFAULT_TYPE):
+    observe_command("set_sprint_deadline")
     chat_id = update.effective_chat.id
     current_sprint = get_sprint_for_chat(chat_id)
     if not current_sprint:
@@ -283,6 +296,7 @@ async def set_sprint_deadline_handler(update: Update,
 
 async def startsprint_command_handler(update: Update,
                                       context: ContextTypes.DEFAULT_TYPE):
+    observe_command("startsprint")
     chat_id = update.effective_chat.id
     current_sprint = get_sprint_for_chat(chat_id)
     if not current_sprint:
@@ -312,6 +326,7 @@ async def startsprint_command_handler(update: Update,
 
 async def check_command_handler(update: Update,
                                 context: ContextTypes.DEFAULT_TYPE):
+    observe_command("check")
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     sprint = get_sprint_for_chat(chat_id)
