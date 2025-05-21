@@ -92,8 +92,8 @@ services:
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-    expose:
-        - "9090"
+    ports:
+        - "9090:9090"
     networks:
       - my_network
     restart: unless-stopped
