@@ -19,6 +19,7 @@ from ..services.bitrix_service import (
     add_checklist_item,
     delete_checklist_item,
     get_checklist_items,
+    get_user_name_from_bitrix,
 )
 from ..utils import get_url_by_type
 
