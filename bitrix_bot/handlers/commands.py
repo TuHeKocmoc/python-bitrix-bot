@@ -255,7 +255,7 @@ async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_T
     await update.message.reply_text(
         f"В этом чате подготовлен спринт (ID={sprint_id}).\n"
         "Укажите дедлайн командой `/set_sprint_deadline 2025-05-20 18:00` "
-        "или сразу `/startsprint 2025-05-20 18:00`."
+        "или сразу `/startsprint 2025-05-20 18:00`.",
     )
 
 
@@ -403,4 +403,3 @@ async def endsprint_command_handler(update: Update,
     report = "\n".join(lines)
     await update.message.reply_text(summary + ("\n" + report if report else ""))
     finish_sprint(sprint["id"])
-
