@@ -338,7 +338,7 @@ async def check_command_handler(update: Update,
         if bitrix_url:
             for t_id in task_ids:
                 fields = get_task_fields_from_bitrix(bitrix_url, t_id)
-                title = fields.get("TITLE", "Без названия")
+                title = fields.get("TITLE") or fields.get("title") or "Без названия"
                 status = fields.get("REAL_STATUS")
                 closed = fields.get("CLOSED_DATE")
                 done = bool(closed) or (status and int(status) >= 5)
@@ -370,7 +370,7 @@ async def check_command_handler(update: Update,
     completed = 0
     for t_id in task_ids:
         fields = get_task_fields_from_bitrix(bitrix_url, t_id)
-        title = fields.get("TITLE", "Без названия")
+        title = fields.get("TITLE") or fields.get("title") or "Без названия"
         status = fields.get("REAL_STATUS")
         closed = fields.get("CLOSED_DATE")
         is_done = bool(closed) or (status and int(status) >= 5)
@@ -415,7 +415,7 @@ async def endsprint_command_handler(update: Update,
     if bitrix_url:
         for t_id in task_ids:
             fields = get_task_fields_from_bitrix(bitrix_url, t_id)
-            title = fields.get("TITLE", "Без названия")
+            title = fields.get("TITLE") or fields.get("title") or "Без названия"
             status = fields.get("REAL_STATUS")
             closed = fields.get("CLOSED_DATE")
             done = bool(closed) or (status and int(status) >= 5)
