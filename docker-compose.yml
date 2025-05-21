@@ -21,7 +21,7 @@ services:
 
   bot:
     container_name: app
-    image: ghcr.io/tuhekocmoc/bitrix:1.0.1
+    image: ghcr.io/tuhekocmoc/bitrix:1.0.3
     build:
       context: .
       dockerfile: Dockerfile
