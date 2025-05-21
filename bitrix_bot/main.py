@@ -182,39 +182,33 @@ def main():
 
     init_db()
 
-    scheduler = Scheduler()
+    with Scheduler() as scheduler:
+        daily_trigger = CronTrigger(hour=22, minute=15)
+        weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
+        sprint_trigger = CronTrigger(minute="*")
 
-    daily_trigger = CronTrigger(hour=10, minute=0)
-    weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
-    sprint_trigger = CronTrigger(minute="*")
+        scheduler.add_schedule(
+            delay_command_handler_daily_all,
+            daily_trigger,
+            args=[application, None],
+            id='daily_task'
+        )
 
-    scheduler.add_schedule(
-        delay_command_handler_daily_all,
-        daily_trigger,
-        args=[application, None],
-        id='daily_task'
-    )
+        scheduler.add_schedule(
+            weekly_report_job_wrapper,
+            weekly_trigger,
+            args=[application],
+            id='weekly_task'
+        )
+        scheduler.add_schedule(
+            check_sprints_job,
+            sprint_trigger,
+            args=[application],
+            id='sprint_task'
+        )
+        scheduler.start_in_background()
 
-    scheduler.add_schedule(
-        weekly_report_job_wrapper,
-        weekly_trigger,
-        args=[application],
-        id='weekly_task'
-    )
-
-    scheduler.add_schedule(
-        check_sprints_job,
-        sprint_trigger,
-        args=[application],
-        id='sprint_task'
-    )
-
-    scheduler.start_in_background()
-
-    try:
-        application.run_polling()
-    finally:
-        scheduler.shutdown()
+    application.run_polling()
     log.start()
 
 
