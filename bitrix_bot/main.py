@@ -184,9 +184,12 @@ def main():
     init_db()
 
     with Scheduler() as scheduler:
-        daily_trigger = CronTrigger(hour=10, minute=0)
+        daily_trigger = CronTrigger(hour=0, minute=5)
         weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
         sprint_trigger = CronTrigger(minute="*")
+        logging.info("Trigger TZ: %s", daily_trigger.timezone)
+        logging.info("Trigger TZ: %s", weekly_trigger.timezone)
+        logging.info("Trigger TZ: %s", sprint_trigger.timezone)
 
         scheduler.add_schedule(
             delay_command_handler_daily_all,
