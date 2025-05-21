@@ -98,6 +98,14 @@ async def weekly_report_job(application):
 def weekly_report_job_wrapper(application):
     asyncio.run(weekly_report_job(application))
 
+def daily_report_job_wrapper(application):
+    """Run the daily report coroutine in a blocking manner."""
+    asyncio.run(delay_command_handler_daily_all(application, None))
+
+
+def check_sprints_job_wrapper(application):
+    """Run the sprint checking coroutine in a blocking manner."""
+    asyncio.run(check_sprints_job(application))
 
 async def check_sprints_job(application):
     active = get_active_sprints()
@@ -184,7 +192,7 @@ def main():
     init_db()
 
     with Scheduler() as scheduler:
-        daily_trigger = CronTrigger(hour=0, minute=7)
+        daily_trigger = CronTrigger(hour=0, minute=17)
         weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
         sprint_trigger = CronTrigger(minute="*")
         logging.info("Trigger TZ: %s", daily_trigger.timezone)
@@ -192,9 +200,9 @@ def main():
         logging.info("Trigger TZ: %s", sprint_trigger.timezone)
 
         scheduler.add_schedule(
-            delay_command_handler_daily_all,
+            daily_report_job_wrapper,
             daily_trigger,
-            args=[application, None],
+            args=[application],
             id='daily_task'
         )
 
@@ -205,7 +213,7 @@ def main():
             id='weekly_task'
         )
         scheduler.add_schedule(
-            check_sprints_job,
+            check_sprints_job_wrapper,
             sprint_trigger,
             args=[application],
             id='sprint_task'
