@@ -211,8 +211,7 @@ def main():
             id='sprint_task'
         )
         scheduler.start_in_background()
-
-    application.run_polling()
+        application.run_polling()
 
 
 if __name__ == "__main__":
