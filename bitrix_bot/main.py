@@ -124,7 +124,7 @@ async def check_sprints_job(application):
             if bitrix_url:
                 for t_id in task_ids:
                     fields = get_task_fields_from_bitrix(bitrix_url, t_id)
-                    title = fields.get("TITLE", "Без названия")
+                    title = fields.get("TITLE") or fields.get("title") or "Без названия"
                     status = fields.get("REAL_STATUS")
                     closed = fields.get("CLOSED_DATE")
                     done = bool(closed) or (status and int(status) >= 5)
@@ -182,33 +182,39 @@ def main():
 
     init_db()
 
-    with Scheduler() as scheduler:
-        daily_trigger = CronTrigger(hour=10, minute=0)
-        weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
-        sprint_trigger = CronTrigger(minute="*")
+    scheduler = Scheduler()
 
-        scheduler.add_schedule(
-            delay_command_handler_daily_all,
-            daily_trigger,
-            args=[application, None],
-            id='daily_task'
-        )
+    daily_trigger = CronTrigger(hour=10, minute=0)
+    weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
+    sprint_trigger = CronTrigger(minute="*")
 
-        scheduler.add_schedule(
-            weekly_report_job_wrapper,
-            weekly_trigger,
-            args=[application],
-            id='weekly_task'
-        )
-        scheduler.add_schedule(
-            check_sprints_job,
-            sprint_trigger,
-            args=[application],
-            id='sprint_task'
-        )
-        scheduler.start_in_background()
+    scheduler.add_schedule(
+        delay_command_handler_daily_all,
+        daily_trigger,
+        args=[application, None],
+        id='daily_task'
+    )
 
-    application.run_polling()
+    scheduler.add_schedule(
+        weekly_report_job_wrapper,
+        weekly_trigger,
+        args=[application],
+        id='weekly_task'
+    )
+
+    scheduler.add_schedule(
+        check_sprints_job,
+        sprint_trigger,
+        args=[application],
+        id='sprint_task'
+    )
+
+    scheduler.start_in_background()
+
+    try:
+        application.run_polling()
+    finally:
+        scheduler.shutdown()
     log.start()
 
 
