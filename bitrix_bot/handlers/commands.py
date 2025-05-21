@@ -323,9 +323,9 @@ async def check_command_handler(update: Update,
     chat_id = update.effective_chat.id
     chat_type = update.effective_chat.type
     sprint = get_sprint_for_chat(chat_id)
-    if not sprint or sprint["is_active"] == 0:
+    if not sprint:
         await update.message.reply_text(
-            "Нет активного спринта в этом чате.")
+            "Спринт в этом чате не создан.")
         return
 
     task_ids = get_sprint_tasks(sprint["id"])
@@ -357,8 +357,13 @@ async def check_command_handler(update: Update,
     else:
         remaining_str = "-"
 
+    if sprint["is_active"]:
+        status_line = f"До дедлайна: {remaining_str}"
+    else:
+        status_line = "Спринт ещё не запущен."
+
     header = (f"Всего задач: {len(task_ids)}, выполнено: {completed} "
-              f"({percent}%). До дедлайна: {remaining_str}")
+              f"({percent}%). {status_line}")
     report = "\n".join(lines)
     await update.message.reply_text(header + "\n" + report)
 
