@@ -144,6 +144,7 @@ async def check_sprints_job(application):
 
 
 def main():
+    log.start()
     setup_metrics()
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -183,7 +184,7 @@ def main():
     init_db()
 
     with Scheduler() as scheduler:
-        daily_trigger = CronTrigger(hour=22, minute=15)
+        daily_trigger = CronTrigger(hour=10, minute=0)
         weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
         sprint_trigger = CronTrigger(minute="*")
 
@@ -209,7 +210,6 @@ def main():
         scheduler.start_in_background()
 
     application.run_polling()
-    log.start()
 
 
 if __name__ == "__main__":
