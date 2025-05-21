@@ -254,8 +254,8 @@ async def sprint_command_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     await update.message.reply_text(
         f"В этом чате подготовлен спринт (ID={sprint_id}).\n"
-        "Укажите дедлайн командой `/set_sprint_deadline 2025-05-20 18:00` "
-        "или сразу `/startsprint 2025-05-20 18:00`."
+        "Укажите дедлайн командой /set_sprint_deadline 2025-05-20 18:00 "
+        "или сразу /startsprint 2025-05-20 18:00."
     )
 
 
@@ -326,6 +326,34 @@ async def check_command_handler(update: Update,
     if not sprint:
         await update.message.reply_text(
             "Спринт в этом чате не создан.")
+        return
+
+    if (sprint["is_active"]
+            and sprint["deadline"]
+            and sprint["deadline"] <= datetime.now()):
+        bitrix_url = await get_url_by_type(chat_id, chat_type, context)
+        task_ids = get_sprint_tasks(sprint["id"])
+        lines = []
+        completed = 0
+        if bitrix_url:
+            for t_id in task_ids:
+                fields = get_task_fields_from_bitrix(bitrix_url, t_id)
+                title = fields.get("TITLE", "Без названия")
+                status = fields.get("REAL_STATUS")
+                closed = fields.get("CLOSED_DATE")
+                done = bool(closed) or (status and int(status) >= 5)
+                if done:
+                    completed += 1
+                lines.append(f"{t_id}: {title} - {'✅' if done else '❌'}")
+
+        percent = int(completed / len(task_ids) * 100) if task_ids else 0
+        summary = (
+            f"Спринт завершен! Выполнено {completed} из {len(task_ids)} "
+            f"({percent}%)."
+        )
+        report = "\n".join(lines)
+        await update.message.reply_text(summary + ("\n" + report if report else ""))
+        finish_sprint(sprint["id"])
         return
 
     task_ids = get_sprint_tasks(sprint["id"])
