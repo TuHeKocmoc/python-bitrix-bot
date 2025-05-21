@@ -184,7 +184,7 @@ def main():
     init_db()
 
     with Scheduler() as scheduler:
-        daily_trigger = CronTrigger(hour=0, minute=5)
+        daily_trigger = CronTrigger(hour=0, minute=7)
         weekly_trigger = CronTrigger(day_of_week='sun', hour=10, minute=0)
         sprint_trigger = CronTrigger(minute="*")
         logging.info("Trigger TZ: %s", daily_trigger.timezone)
