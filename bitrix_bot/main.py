@@ -37,6 +37,7 @@ from .handlers.commands import (
     set_sprint_deadline_handler,
     startsprint_command_handler,
     check_command_handler,
+    endsprint_command_handler,
 )
 from .handlers.messages import text_message_handler
 from .handlers.edit_task import edit_task_conv_handler
@@ -168,6 +169,8 @@ def main():
                                              startsprint_command_handler))
     application.add_handler(CommandHandler("check",
                                              check_command_handler))
+    application.add_handler(CommandHandler("endsprint",
+                                             endsprint_command_handler))
 
     application.add_handler(edit_task_conv_handler)
 

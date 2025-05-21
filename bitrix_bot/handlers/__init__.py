@@ -10,6 +10,7 @@ from .commands import (
     report_command_handler,
     tasks_command_handler,
     sprint_command_handler,
+    endsprint_command_handler,
 )
 from .messages import text_message_handler
 from .edit_task import (
@@ -34,6 +35,7 @@ __all__ = [
     "report_command_handler",
     "tasks_command_handler",
     "sprint_command_handler",
+    "endsprint_command_handler",
     "text_message_handler",
     "edit_task_conv_handler",
     "CHOOSING_FIELD",

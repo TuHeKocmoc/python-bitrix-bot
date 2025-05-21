@@ -153,7 +153,8 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         task_id = int(result['result']['task']['id'])
 
         sprint = get_sprint_for_chat(chat_id)
-        if sprint and sprint.get("is_active") == 1:
+        # Задачи добавляются в спринт только на этапе подготовки
+        if sprint and sprint.get("is_active") == 0:
             add_task_to_sprint(sprint["id"], task_id)
     else:
         task_id = 0
