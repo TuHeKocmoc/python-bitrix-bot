@@ -298,7 +298,7 @@ def create_sprint(chat_id: int):
     cursor.execute(
         """
         INSERT INTO sprints (chat_id, deadline, is_active)
-        VALUES (%s, NULL, 0)
+        VALUES (%s, NULL, FALSE)
         RETURNING id
         """,
         (chat_id,)
@@ -331,14 +331,14 @@ def start_sprint(sprint_id: int, deadline: datetime | None = None):
         cursor.execute(
             """
             UPDATE sprints
-            SET deadline=%s, is_active=1, updated_at=CURRENT_TIMESTAMP
+            SET deadline=%s, is_active=TRUE, updated_at=CURRENT_TIMESTAMP
             WHERE id=%s
             """,
             (deadline, sprint_id),
         )
     else:
         cursor.execute(
-            "UPDATE sprints SET is_active=1, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+            "UPDATE sprints SET is_active=TRUE, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
             (sprint_id,),
         )
     conn.commit()
@@ -351,7 +351,7 @@ def finish_sprint(sprint_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE sprints SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+        "UPDATE sprints SET is_active=FALSE, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
         (sprint_id,),
     )
     conn.commit()
@@ -390,7 +390,7 @@ def get_active_sprints() -> list[dict]:
     """Возвращает все активные спринты."""
     conn = get_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM sprints WHERE is_active=1")
+    cursor.execute("SELECT * FROM sprints WHERE is_active=TRUE")
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
