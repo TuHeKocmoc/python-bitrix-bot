@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # База данных для bitrix бота
+  db-bitrix:
+    container_name: db-bitrix
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    environment:
+      POSTGRES_USER: ${BITRIX_DB_USER:-bitrixuser}
+      POSTGRES_PASSWORD: ${BITRIX_DB_PASSWORD:-password}
+      POSTGRES_DB: ${BITRIX_DB_NAME:-bitrixbot}
+      POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=md5 --locale=ru_RU.UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8"
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - db-bitrix-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # База данных для task бота
+  db-task:
+    container_name: db-task
+    build:
+      context: ./pytohn-task-bot
+      dockerfile: Dockerfile.postgres
+    environment:
+      POSTGRES_USER: ${TASK_DB_USER:-taskuser}
+      POSTGRES_PASSWORD: ${TASK_DB_PASSWORD:-password}
+      POSTGRES_DB: ${TASK_DB_NAME:-taskbot}
+      POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=md5 --locale=ru_RU.UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8"
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - db-task-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # Bitrix бот
+  bot-bitrix:
+    container_name: bot-bitrix
+    image: ghcr.io/tuhekocmoc/bitrix:1.0.17
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - METRICS_PORT=${BITRIX_METRICS_PORT:-8000}
+      - DB_HOST=db-bitrix
+      - DB_NAME=${BITRIX_DB_NAME:-bitrixbot}
+      - DB_USER=${BITRIX_DB_USER:-bitrixuser}
+      - DB_PASSWORD=${BITRIX_DB_PASSWORD:-password}
+    depends_on:
+      - db-bitrix
+    expose:
+      - "${BITRIX_METRICS_PORT:-8000}"
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # Task бот
+  bot-task:
+    container_name: bot-task
+    image: ghcr.io/tuhekocmoc/bitrix:1.0.17
+    build:
+      context: ./pytohn-task-bot
+      dockerfile: Dockerfile
+    env_file:
+      - ./pytohn-task-bot/.env
+    environment:
+      - METRICS_PORT=${TASK_METRICS_PORT:-8001}
+      - DB_HOST=db-task
+      - DB_NAME=${TASK_DB_NAME:-taskbot}
+      - DB_USER=${TASK_DB_USER:-taskuser}
+      - DB_PASSWORD=${TASK_DB_PASSWORD:-password}
+    depends_on:
+      - db-task
+    expose:
+      - "${TASK_METRICS_PORT:-8001}"
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # Postgres exporter для bitrix БД
+  postgres_exporter_bitrix:
+    image: wrouesnel/postgres_exporter
+    container_name: postgres_exporter_bitrix
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${BITRIX_DB_USER:-bitrixuser}:${BITRIX_DB_PASSWORD:-password}@db-bitrix:5432/${BITRIX_DB_NAME:-bitrixbot}?sslmode=disable
+    depends_on:
+      - db-bitrix
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # Postgres exporter для task БД
+  postgres_exporter_task:
+    image: wrouesnel/postgres_exporter
+    container_name: postgres_exporter_task
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${TASK_DB_USER:-taskuser}:${TASK_DB_PASSWORD:-password}@db-task:5432/${TASK_DB_NAME:-taskbot}?sslmode=disable
+    depends_on:
+      - db-task
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # Общие сервисы мониторинга
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    network_mode: host
+    pid: "host"
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /run/udev:/run/udev:ro
+    command:
+      - '--path.rootfs=/rootfs'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+)($|/)'
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    expose:
+      - "8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus-multi.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - my_network
+    restart: unless-stopped
+
+volumes:
+  db-bitrix-data:
+    driver: local
+  db-task-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  my_network:
+    driver: bridge 
