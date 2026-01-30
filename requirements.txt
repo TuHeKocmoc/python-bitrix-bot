@@ -31,7 +31,7 @@ jiter==0.10.0
 jmespath==1.0.1
 jsonschema==4.23.0
 jsonschema-specifications==2025.4.1
-multidict==6.4.4
+multidict==6.7.1
 psycopg2==2.9.10
 openai==1.79.0
 opuslib==3.0.1
