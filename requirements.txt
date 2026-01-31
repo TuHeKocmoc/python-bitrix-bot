@@ -11,7 +11,7 @@ anyio==4.9.0
 APScheduler==4.0.0a6
 attrs==25.3.0
 beautifulsoup4==4.13.4
-certifi==2025.4.26
+certifi==2026.1.4
 charset-normalizer==3.4.2
 distro==1.9.0
 frozenlist==1.6.0
