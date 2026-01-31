@@ -30,7 +30,7 @@ jsonschema==4.23.0
 jsonschema-specifications==2025.9.1
 multidict==6.7.1
 psycopg2==2.9.11
-openai==1.79.0
+openai==2.16.0
 opuslib==3.0.1
 packaging==26.0
 pluggy==1.6.0
