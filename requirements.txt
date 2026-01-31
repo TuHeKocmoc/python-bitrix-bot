@@ -24,7 +24,7 @@ httpcore==1.0.9
 httpx==0.28.1
 idna==3.11
 iniconfig==2.1.0
-jiter==0.10.0
+jiter==0.12.0
 jmespath==1.1.0
 jsonschema==4.23.0
 jsonschema-specifications==2025.4.1
