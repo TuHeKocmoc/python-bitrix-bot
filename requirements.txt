@@ -57,7 +57,7 @@ standard-aifc==3.13.0
 standard-chunk==3.13.0
 tenacity==9.1.2
 tqdm==4.67.2
-typing-inspection==0.4.0
+typing-inspection==0.4.2
 typing_extensions==4.13.2
 tzlocal==5.3.1
 urllib3==2.6.3
