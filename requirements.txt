@@ -1,4 +1,4 @@
-pip==26.0
+pip==26.0.1
 aioboto3==15.5.0
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
