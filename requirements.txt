@@ -34,7 +34,7 @@ opuslib==3.0.1
 packaging==26.0
 pluggy==1.6.0
 propcache==0.4.1
-protobuf==6.33.5
+protobuf==7.34.0
 pydantic==2.12.5
 pydantic_core==2.42.0
 pydub==0.25.1
