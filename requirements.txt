@@ -11,7 +11,7 @@ APScheduler==4.0.0a6
 attrs==26.1.0
 beautifulsoup4==4.14.3
 certifi==2026.2.25
-charset-normalizer==3.4.5
+charset-normalizer==3.4.6
 distro==1.9.0
 frozenlist==1.8.0
 google==3.0.0
