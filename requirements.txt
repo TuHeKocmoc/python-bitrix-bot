@@ -6,7 +6,7 @@ aiohttp==3.13.3
 aioitertools==0.13.0
 aiosignal==1.4.0
 annotated-types==0.7.0
-anyio==4.12.1
+anyio==4.13.0
 APScheduler==4.0.0a6
 attrs==26.1.0
 beautifulsoup4==4.14.3
