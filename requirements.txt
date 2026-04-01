@@ -2,7 +2,7 @@ pip==26.0.1
 aioboto3==15.5.0
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
-aiohttp==3.13.3
+aiohttp==3.13.4
 aioitertools==0.13.0
 aiosignal==1.4.0
 annotated-types==0.7.0
@@ -45,7 +45,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-telegram-bot==22.7
 referencing==0.37.0
-requests==2.32.5
+requests==2.33.0
 rpds-py==0.30.0
 setuptools==82.0.1
 six==1.17.0
