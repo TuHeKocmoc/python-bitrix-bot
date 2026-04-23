@@ -31,7 +31,7 @@ multidict==6.7.1
 psycopg2==2.9.11
 openai==2.30.0
 opuslib==3.0.1
-packaging==26.0
+packaging==26.1
 pluggy==1.6.0
 propcache==0.4.1
 protobuf==7.34.1
