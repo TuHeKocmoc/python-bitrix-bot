@@ -28,7 +28,7 @@ jmespath==1.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 multidict==6.7.1
-psycopg2==2.9.11
+psycopg2==2.9.12
 openai==2.30.0
 opuslib==3.0.1
 packaging==26.0
